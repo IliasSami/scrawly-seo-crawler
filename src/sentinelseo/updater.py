@@ -15,6 +15,7 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 import structlog
 
@@ -110,10 +111,29 @@ def _ci_passed(sha: str) -> bool:
         # strand this machine on an old version forever — allow the update and log it.
         log.info("updater.ci_unverifiable", error=type(exc).__name__, message="Updating anyway.")
         return True
-    if not runs:
-        return False  # reachable, but CI hasn't reported yet — wait for next launch
-    return all(r.get("status") == "completed" and r.get("conclusion") == "success"
-               for r in runs)
+    return _checks_allow_update(runs)
+
+
+# Scrawly's own CI checks: the quality gate, plus the cross-platform installer
+# test on the public repo. Other check runs on a commit (GitHub's dependency
+# graph, Pages, future integrations) must not decide whether users update.
+def _is_scrawly_check(run: dict[str, Any]) -> bool:
+    name = str(run.get("name") or "")
+    return name == "gate" or name.startswith("install")
+
+
+def _checks_allow_update(runs: list[dict[str, Any]]) -> bool:
+    """The gate passed and none of Scrawly's checks failed or are still running.
+    Skipped or neutral checks (a job that only runs on the public repo) are fine."""
+    ours = [r for r in runs if _is_scrawly_check(r)]
+    gate = [r for r in ours if r.get("name") == "gate"]
+    if not gate:
+        return False  # CI hasn't reported the gate yet: wait for the next launch
+    ok_states = {"success", "skipped", "neutral"}
+    finished = all(r.get("status") == "completed" for r in ours)
+    clean = all(r.get("conclusion") in ok_states for r in ours)
+    gate_passed = all(r.get("conclusion") == "success" for r in gate)
+    return finished and clean and gate_passed
 
 
 def _refresh_python_deps() -> None:

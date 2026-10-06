@@ -50,23 +50,23 @@ def test_allows_update_when_api_unreachable(monkeypatch: pytest.MonkeyPatch) -> 
 def test_true_when_all_checks_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     _github(monkeypatch)
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
-        {"status": "completed", "conclusion": "success"},
-        {"status": "completed", "conclusion": "success"}]}))
+        {"name": "gate", "status": "completed", "conclusion": "success"},
+        {"name": "install (macos-latest)", "status": "completed", "conclusion": "success"}]}))
     assert upd._ci_passed("abc") is True
 
 
 def test_false_on_definitive_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     _github(monkeypatch)
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
-        {"status": "completed", "conclusion": "success"},
-        {"status": "completed", "conclusion": "failure"}]}))
+        {"name": "gate", "status": "completed", "conclusion": "success"},
+        {"name": "install (windows-latest)", "status": "completed", "conclusion": "failure"}]}))
     assert upd._ci_passed("abc") is False
 
 
 def test_false_while_pending(monkeypatch: pytest.MonkeyPatch) -> None:
     _github(monkeypatch)
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen(
-        {"check_runs": [{"status": "in_progress", "conclusion": None}]}))
+        {"check_runs": [{"name": "gate", "status": "in_progress", "conclusion": None}]}))
     assert upd._ci_passed("abc") is False
 
 
@@ -143,3 +143,45 @@ def test_ui_rebuilt_when_dist_is_not_tracked(tmp_path: Any, monkeypatch: pytest.
     monkeypatch.setattr(upd, "_run", _run)
     upd._rebuild_ui()
     assert any(c[0] == "/usr/bin/npm" and "build" in c for c in cmds)
+
+
+def test_skipped_checks_do_not_block_updates(monkeypatch: pytest.MonkeyPatch) -> None:
+    _github(monkeypatch)
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
+        {"name": "gate", "status": "completed", "conclusion": "success"},
+        {"name": "install", "status": "completed", "conclusion": "skipped"},
+        {"name": "install (ubuntu-latest)", "status": "completed", "conclusion": "neutral"}]}))
+    assert upd._ci_passed("abc") is True
+
+
+def test_failed_or_cancelled_checks_block_updates(monkeypatch: pytest.MonkeyPatch) -> None:
+    _github(monkeypatch)
+    for bad in ("failure", "cancelled", "timed_out"):
+        monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
+            {"name": "gate", "status": "completed", "conclusion": "success"},
+            {"name": "install (macos-latest)", "status": "completed", "conclusion": bad}]}))
+        assert upd._ci_passed("abc") is False, bad
+
+
+def test_all_skipped_is_not_a_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    _github(monkeypatch)
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
+        {"name": "gate", "status": "completed", "conclusion": "skipped"}]}))
+    assert upd._ci_passed("abc") is False
+
+
+def test_unrelated_checks_do_not_block_updates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """GitHub's own checks (dependency graph, Pages) must not hold users back."""
+    _github(monkeypatch)
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
+        {"name": "update-pip-graph", "status": "in_progress", "conclusion": None},
+        {"name": "deploy", "status": "completed", "conclusion": "failure"},
+        {"name": "gate", "status": "completed", "conclusion": "success"}]}))
+    assert upd._ci_passed("abc") is True
+
+
+def test_waits_until_the_gate_reports(monkeypatch: pytest.MonkeyPatch) -> None:
+    _github(monkeypatch)
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen({"check_runs": [
+        {"name": "update-pip-graph", "status": "completed", "conclusion": "success"}]}))
+    assert upd._ci_passed("abc") is False
