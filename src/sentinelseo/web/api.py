@@ -3728,8 +3728,9 @@ async def send_feedback(data: dict[str, Any]) -> dict[str, Any]:
         "code": "unreachable",
         "message": "Could not reach the feedback service. You can email your note instead."})
     try:
-        # Generous timeout: the receiving service may need to wake from idle.
-        async with httpx.AsyncClient(timeout=httpx.Timeout(75.0, connect=20.0)) as client:
+        # Long enough for the receiving service to wake from idle, short enough
+        # that people get the email / GitHub fallback quickly if it's down.
+        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=15.0)) as client:
             resp = await client.post(edition.feedback_url(), json=payload)
     except httpx.HTTPError:
         log.warning("feedback.unreachable", url=edition.feedback_url())
