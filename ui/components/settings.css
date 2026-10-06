@@ -1,0 +1,79 @@
+/* settings.css — clean, guided layout for the Settings workspace.
+   Shares the .help tooltip (style.css) and the design tokens. */
+
+.settings-page {
+  max-width: 840px;
+  margin: 0 auto;
+  padding-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.settings-head h1 { margin: 0 0 4px; }
+.settings-sub { margin: 0; font-size: var(--text-md); color: var(--text-secondary); }
+.settings-sub a { color: var(--accent); text-decoration: none; font-weight: var(--weight-medium); }
+.settings-sub a:hover { text-decoration: underline; }
+
+.settings-section-head { margin-top: var(--space-1); }
+.settings-section-head h2 { margin: 0 0 2px; }
+.settings-section-head p { margin: 0; font-size: var(--text-sm); color: var(--text-tertiary); }
+
+.settings-card { padding: var(--space-3); }
+.settings-card-head { margin-bottom: var(--space-2); }
+.settings-card-head h3 { margin: 0 0 3px; display: flex; align-items: center; gap: 8px; }
+.settings-card-desc { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.45; }
+
+/* label / control rows */
+.settings-grid { display: flex; flex-direction: column; gap: var(--space-2); }
+.field {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: center;
+}
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+.field-ctl {
+  width: 100%;
+  padding: 8px 11px;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  color: var(--text-primary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+.field-ctl.mono { font-family: var(--font-mono); }
+.field-ctl:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.field-ctl--sm { max-width: 130px; }
+.field-ctl[type="color"] { height: 38px; padding: 4px; width: 64px; cursor: pointer; }
+/* checkbox rows align the control to the left of the value column */
+.field-check { justify-self: start; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+.settings-actions { display: flex; justify-content: flex-end; gap: var(--space-1); margin-top: var(--space-2); }
+.settings-status { font-size: var(--text-sm); margin-top: var(--space-1); min-height: 1em; }
+
+/* a highlighted pointer card (e.g. "crawl settings live in Configuration") */
+.settings-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface-2);
+}
+.settings-hint-body { flex: 1; min-width: 0; }
+.settings-hint-body strong { display: block; font-size: var(--text-md); color: var(--text-primary); }
+.settings-hint-body span { font-size: var(--text-sm); color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+  .field { grid-template-columns: 1fr; gap: 6px; }
+}

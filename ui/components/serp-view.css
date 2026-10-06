@@ -1,0 +1,59 @@
+/* Titles and descriptions view. Two lenses: Google pixel fit + AI context depth.
+   Stat chips and filter pills come from the shared primitives (table.css); the
+   rest is the card editor specific to this view. */
+.srp-stats { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-3); }
+.srp-filters { display: flex; gap: 6px; margin-bottom: var(--space-3); }
+
+.srp-card {
+  background: var(--bg-surface); border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-2);
+}
+.srp-url { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srp-field { margin-bottom: 10px; }
+.srp-field label { display: block; font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--text-tertiary); margin-bottom: 4px; }
+.srp-chars { font-weight: var(--weight-regular); text-transform: none; letter-spacing: 0; opacity: .75; }
+.srp-in {
+  width: 100%; padding: 7px 10px; font-size: var(--text-base); color: var(--text-primary);
+  background: var(--bg-surface); border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg); resize: vertical; font-family: inherit;
+}
+.srp-in:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.srp-in.bad { border-color: color-mix(in srgb, var(--color-critical) 55%, transparent); }
+
+.srp-bar {
+  position: relative; height: 5px; margin-top: 6px; border-radius: var(--radius-full);
+  background: var(--chart-track);
+}
+.srp-bar i { display: block; height: 100%; border-radius: var(--radius-full); background: var(--color-passed); transition: width var(--dur-med); }
+.srp-bar i.bad { background: var(--color-critical); }
+.srp-px {
+  position: absolute; right: 0; top: 8px; font-size: 10.5px;
+  color: var(--text-secondary); font-variant-numeric: tabular-nums;
+}
+.srp-px.bad { color: var(--color-critical); font-weight: var(--weight-semibold); }
+
+.srp-in.warn { border-color: color-mix(in srgb, var(--color-warning) 55%, transparent); }
+
+.srp-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.srp-ai-tag {
+  flex: none; font-size: 11px; font-weight: var(--weight-semibold); padding: 2px 8px;
+  border-radius: var(--radius-full); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.srp-ai-done { border-color: color-mix(in srgb, var(--accent) 40%, var(--border-color)); }
+
+/* Plain-language guidance under each field. */
+.srp-note { margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.srp-note.bad { color: var(--color-critical); }
+.srp-note.warn { color: var(--color-warning); }
+
+.srp-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.srp-ai {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+  font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer;
+  color: #fff; border: none; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+.srp-ai:hover { filter: brightness(1.06); }
+.srp-ai:disabled { opacity: .65; cursor: default; }
+.srp-ai-err { font-size: 12px; color: var(--color-critical); }

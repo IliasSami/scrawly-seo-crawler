@@ -1,0 +1,81 @@
+/* ui/components/site-graph.css */
+.sg-controls {
+  display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap;
+  padding: var(--space-2) 0; position: relative; z-index: 5;
+}
+.sg-ctl { display: flex; flex-direction: column; gap: 4px; }
+.sg-ctl.sg-grow { flex: 1; min-width: 180px; }
+.sg-ctl label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 700; }
+.sg-ctl select, .sg-search {
+  padding: 7px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  background: var(--bg-surface); color: var(--text-primary); font-family: inherit; font-size: 13px;
+}
+.sg-search { width: 100%; }
+
+.sg-stats { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-2); }
+.sg-chip {
+  display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 10px;
+  border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-color);
+  font-weight: 700; font-size: 14px; color: var(--text-primary); font-variant-numeric: tabular-nums;
+}
+.sg-chip small { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+.sg-chip.warn { border-color: var(--color-warning); }
+.sg-chip.bad { border-color: var(--color-critical); }
+
+.sg-stage {
+  position: relative; flex: 1; min-height: 520px;
+  border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+  background: var(--bg-body); overflow: hidden;
+}
+/* currentColor drives the depth rings, tree links + labels so they read in
+   both themes without hard-coding a colour. */
+.sg-canvas { position: absolute; inset: 0; color: var(--text-secondary); }
+.sg-canvas svg { display: block; }
+.sg-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); }
+
+/* Label halo so text stays legible over links / packed circles. */
+.sg-tree-label, .sg-cluster-label {
+  fill: var(--text-primary);
+  paint-order: stroke; stroke: var(--bg-body); stroke-width: 3.5px; stroke-linejoin: round;
+  font-size: 11px;
+}
+.sg-cluster-label { fill: var(--text-primary); }
+/* Architecture-map labels: same halo, but let per-node font-size/weight (set as
+   SVG attributes) drive the size so Home > section > page reads as a hierarchy. */
+.sg-arch-label {
+  fill: var(--text-primary);
+  paint-order: stroke; stroke: var(--bg-body); stroke-width: 3.5px; stroke-linejoin: round;
+}
+
+.sg-legend {
+  position: absolute; top: 12px; right: 12px; z-index: 4;
+  background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  padding: 8px 10px; box-shadow: var(--shadow-sm); font-size: 11px; max-width: 190px;
+}
+.sg-leg { display: flex; align-items: center; gap: 7px; padding: 2px 0; color: var(--text-primary); }
+.sg-leg-sep { height: 1px; background: var(--border-color); margin: 5px 0; }
+.sg-leg.sg-note { color: var(--text-secondary); font-style: italic; margin-top: 4px; }
+.sg-sw { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.sg-sw.sg-ring { background: transparent !important; border: 2px solid; }
+
+.sg-tip {
+  position: absolute; z-index: 20; pointer-events: none; max-width: 320px;
+  background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); padding: 10px 12px; font-size: 12px;
+}
+.sg-tip-h { font-weight: 600; color: var(--text-primary); margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); word-break: break-all; font-size: 12px; }
+.sg-tip-url { color: var(--text-secondary); font-size: 11px; }
+.sg-tip-r { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; color: var(--text-secondary); }
+.sg-tip-r b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.sg-spin3d {
+  display: inline-block; width: 15px; height: 15px; vertical-align: -2px; margin-right: 7px;
+  border: 2px solid color-mix(in srgb, var(--color-notice) 30%, transparent);
+  border-top-color: var(--color-notice); border-radius: 50%;
+  animation: sg-rot 0.7s linear infinite;
+}
+@keyframes sg-rot { to { transform: rotate(360deg); } }
+
+.sg-redir { padding: var(--space-3); overflow-y: auto; height: 100%; }
+.sg-redir-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+.sg-redir-row:hover { background: var(--bg-surface-hover); }

@@ -1,0 +1,53 @@
+/* fix-agent.css — the autonomous Fix button + its live status states. */
+
+.fix-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-md);
+  padding: var(--space-1) var(--space-2);
+  min-width: 92px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease-standard), opacity var(--dur-fast) var(--ease-standard);
+}
+.fix-btn:hover:not(:disabled) { background: var(--accent-hover); }
+.fix-btn svg { width: 15px; height: 15px; }
+.fix-btn:disabled { cursor: default; }
+
+/* Running / waiting — muted surface with a spinner. */
+.fix-btn.fx-run,
+.fix-btn.fx-wait {
+  background: var(--bg-surface-hover);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+/* Done — success. */
+.fix-btn.fx-done {
+  background: var(--passed-soft);
+  color: var(--color-passed);
+  border-color: color-mix(in srgb, var(--color-passed) 40%, transparent);
+}
+/* Error — retry. */
+.fix-btn.fx-err {
+  background: var(--critical-soft);
+  color: var(--color-critical);
+  border-color: color-mix(in srgb, var(--color-critical) 40%, transparent);
+}
+
+.fx-spin {
+  width: 13px; height: 13px; flex: none;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: fx-spin 0.7s linear infinite;
+  opacity: 0.8;
+}
+@keyframes fx-spin { to { transform: rotate(360deg); } }

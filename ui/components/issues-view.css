@@ -1,0 +1,187 @@
+/* ui/components/issues-view.css — Issues & Audits, rebuilt around triage.
+ *
+ * The old hub rendered every finding as an equal-weight 164px card, so 49
+ * issues became ~8,000px of undifferentiated scroll with the single most
+ * important number (how many pages are affected) as grey text at the bottom.
+ * This layout inverts that: severity and impact drive the visual hierarchy,
+ * and everything else recedes until asked for.
+ */
+
+.iss {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ---- header ---- */
+.iss-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.iss-head h1 { margin: 0 0 2px; }
+.iss-sub { margin: 0; color: var(--text-secondary); font-size: var(--text-md); }
+
+/* Severity chips double as filters — the old strip looked clickable but wasn't. */
+.iss-sevs { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.iss-sev {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  border: 1px solid var(--border-color); background: var(--bg-surface);
+  border-radius: var(--radius-full); padding: 5px 12px; cursor: pointer;
+  font-size: var(--text-sm); color: var(--text-secondary);
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.iss-sev:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+.iss-sev .n { font-weight: var(--weight-bold); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.iss-sev .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.iss-sev.is-on { border-color: currentColor; }
+.iss-sev.is-on.sev-critical { background: var(--critical-soft); color: var(--color-critical); }
+.iss-sev.is-on.sev-high     { background: var(--warning-soft);  color: var(--color-warning); }
+.iss-sev.is-on.sev-medium   { background: var(--warning-soft);  color: var(--color-warning); }
+.iss-sev.is-on.sev-low      { background: var(--notice-soft);   color: var(--color-notice); }
+.iss-sev.is-on.sev-info     { background: var(--bg-surface-hover); color: var(--text-secondary); }
+.iss-sev.is-on .n { color: inherit; }
+
+/* ---- toolbar: search + sort ---- */
+.iss-tools { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.iss-search {
+  flex: 1 1 260px; min-width: 200px;
+  padding: 8px 12px; border: 1px solid var(--border-color);
+  border-radius: var(--radius-md); background: var(--bg-surface);
+  color: var(--text-primary); font-size: var(--text-md);
+}
+.iss-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.iss-sort { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-tertiary); }
+.iss-sort select {
+  padding: 7px 10px; border: 1px solid var(--border-color);
+  border-radius: var(--radius-md); background: var(--bg-surface);
+  color: var(--text-primary); font-size: var(--text-sm);
+}
+.iss-count { font-size: var(--text-sm); color: var(--text-tertiary); white-space: nowrap; }
+
+/* ---- layout: rail + list ---- */
+.iss-body { display: grid; grid-template-columns: 226px 1fr; gap: var(--space-3); align-items: start; }
+@media (max-width: 900px) { .iss-body { grid-template-columns: 1fr; } }
+
+.iss-rail { display: flex; flex-direction: column; gap: 2px; position: sticky; top: var(--space-2); }
+.iss-rail-item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--radius-md); cursor: pointer;
+  font-size: var(--text-sm); color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+.iss-rail-item:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+.iss-rail-item.is-on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-ring); font-weight: var(--weight-semibold); }
+/* Counts on the rail: the old one gave no clue where problems concentrated. */
+.iss-rail-n { font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-tertiary); }
+.iss-rail-item.is-on .iss-rail-n { color: inherit; }
+.iss-rail-item.is-empty { opacity: .45; }
+
+/* ---- group ---- */
+.iss-group { margin-bottom: var(--space-3); }
+.iss-group-h {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 6px 2px; cursor: pointer; user-select: none;
+}
+.iss-group-h:hover .iss-group-t { color: var(--accent); }
+.iss-group-caret { font-size: 10px; color: var(--text-tertiary); transition: transform .15s ease; }
+.iss-group-h.collapsed .iss-group-caret { transform: rotate(-90deg); }
+.iss-group-t { font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text-primary); }
+.iss-group-n { font-size: var(--text-xs); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+/* Severity mix bar — a bare "11" never said whether those were critical or info.
+   Sits next to the count, not flushed right, so it reads as part of the label
+   rather than a stray rule floating at the edge of the row. */
+.iss-mix { display: flex; height: 5px; width: 76px; border-radius: 3px; overflow: hidden; background: var(--border-color); flex: none; }
+.iss-mix i { display: block; height: 100%; }
+.iss-group-body.collapsed { display: none; }
+
+/* ---- row ---- */
+.iss-row {
+  display: grid;
+  grid-template-columns: 3px 84px 1fr 92px auto;
+  align-items: center; gap: var(--space-2);
+  background: var(--bg-surface); border: 1px solid var(--border-color);
+  border-radius: var(--radius-md); margin-bottom: 6px;
+  padding: 10px var(--space-2) 10px 0;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.iss-row:hover { border-color: var(--accent-ring); box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.06)); }
+.iss-row.is-open { border-color: var(--accent); }
+
+/* Severity as a full-height rail: colour carries the weight, not a text chip. */
+.iss-bar { align-self: stretch; border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.iss-bar.sev-critical { background: var(--color-critical); }
+.iss-bar.sev-high     { background: var(--color-warning); }
+.iss-bar.sev-medium   { background: var(--color-warning); opacity: .6; }
+.iss-bar.sev-low      { background: var(--color-notice); }
+.iss-bar.sev-info     { background: var(--border-color); }
+
+.iss-sevlab { font-size: 10px; font-weight: var(--weight-bold); text-transform: uppercase; letter-spacing: .05em; padding-left: var(--space-2); }
+.iss-sevlab.sev-critical { color: var(--color-critical); }
+.iss-sevlab.sev-high     { color: var(--color-warning); }
+.iss-sevlab.sev-medium   { color: var(--color-warning); }
+.iss-sevlab.sev-low      { color: var(--color-notice); }
+.iss-sevlab.sev-info     { color: var(--text-tertiary); }
+
+.iss-main { min-width: 0; }
+/* Clamp to two lines: a few checks have very long names, and letting them wrap
+   freely broke the vertical rhythm of the list (one row three times the height
+   of its neighbours), which is exactly what makes a long list hard to scan.
+   The full title is available via the title attribute and the detail panel. */
+.iss-title {
+  font-size: var(--text-md); font-weight: var(--weight-semibold);
+  color: var(--text-primary); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.iss-why { font-size: var(--text-sm); color: var(--text-secondary); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Impact: the number that drives triage, so it gets real typographic weight. */
+.iss-impact { text-align: right; }
+.iss-impact-n { font-size: var(--text-lg); font-weight: var(--weight-bold); color: var(--text-primary); line-height: 1; font-variant-numeric: tabular-nums; }
+.iss-impact-l { font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--text-tertiary); }
+
+/* Secondary actions stay VISIBLE but quiet. An earlier pass hid them until
+ * hover to avoid 49 rows becoming 98 competing buttons — but that buried
+ * "Copy prompt", a headline action, and made it unreachable without a mouse.
+ * De-emphasis belongs in visual weight, not in visibility: these render as
+ * borderless ghost buttons and gain a border/contrast on row hover or focus. */
+.iss-actions { display: flex; align-items: center; gap: 4px; }
+.iss-actions .btn { padding: 5px 10px; font-size: var(--text-sm); }
+.iss-actions .iss-secondary {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  transition: color .12s ease, border-color .12s ease, background .12s ease;
+}
+.iss-row:hover .iss-secondary,
+.iss-row:focus-within .iss-secondary,
+.iss-row.is-open .iss-secondary {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  background: var(--bg-surface);
+}
+.iss-actions .iss-secondary:hover { color: var(--accent); border-color: var(--accent-ring); }
+.iss-actions .iss-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.iss-copy.is-copied { color: var(--color-passed) !important; border-color: var(--color-passed) !important; }
+
+/* Expanded detail — kept out of the row until asked for. */
+.iss-detail { grid-column: 1 / -1; padding: var(--space-2) var(--space-2) 4px calc(var(--space-2) + 3px); border-top: 1px solid var(--border-color); margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.iss-detail-row { font-size: var(--text-sm); color: var(--text-secondary); }
+.iss-detail-row b { display: block; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--text-tertiary); margin-bottom: 2px; }
+.iss-ev { font-size: 11px; color: var(--text-tertiary); word-break: break-word; }
+.iss-tier { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); color: var(--text-tertiary); }
+.iss-tier code { background: var(--bg-surface-hover); border-radius: var(--radius-sm); padding: 1px 5px; font-size: 10px; color: var(--text-secondary); }
+
+/* ---- triage banner: "what do I fix first?" ---- */
+.iss-triage { padding: var(--space-2) var(--space-3); border-left: 3px solid var(--accent); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.iss-triage-h { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--text-tertiary); }
+.iss-triage-list { display: flex; gap: var(--space-2); flex-wrap: wrap; flex: 1; }
+.iss-triage-item { display: flex; align-items: baseline; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
+.iss-triage-item:hover { color: var(--accent); }
+.iss-triage-item .n { font-weight: var(--weight-bold); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.iss-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); min-height: 220px; color: var(--text-tertiary); text-align: center; }
+
+@media (max-width: 720px) {
+  .iss-row { grid-template-columns: 3px 1fr auto; }
+  .iss-sevlab, .iss-impact { display: none; }
+}

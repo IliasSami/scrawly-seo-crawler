@@ -1,0 +1,236 @@
+/* ai-assistant.css — floating audit analyst (bubble + chat panel).
+   Token-driven, theme-aware, minimally intrusive. */
+
+.ai-root {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1500;
+}
+
+/* Floating action button */
+.ai-fab {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-500), var(--violet-500));
+  box-shadow: var(--elev-3);
+  transition: transform var(--dur-fast) var(--ease-standard),
+              box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ai-fab:hover { transform: translateY(-2px) scale(1.03); }
+.ai-fab:active { transform: translateY(0) scale(0.98); }
+.ai-fab svg { width: 24px; height: 24px; }
+
+/* State-driven visibility (classes, never [hidden] — a display rule would win). */
+.ai-fab { display: grid; }
+.ai-panel, .ai-dock { display: none; }
+.ai-root.is-open .ai-fab,
+.ai-root.is-min .ai-fab { display: none; }
+.ai-root.is-open .ai-panel { display: flex; }
+.ai-root.is-min .ai-dock { display: inline-flex; }
+
+/* Minimized dock — a slim bar that keeps the conversation one click away. */
+.ai-dock {
+  align-items: center;
+  gap: var(--space-1);
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--elev-2);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ai-dock:hover { transform: translateY(-1px); box-shadow: var(--elev-3); }
+.ai-dock-icon {
+  width: 22px; height: 22px; flex: none; display: grid; place-items: center;
+  border-radius: var(--radius-sm); color: #fff;
+  background: linear-gradient(135deg, var(--brand-500), var(--violet-500));
+}
+.ai-dock-icon svg { width: 14px; height: 14px; }
+.ai-dock-name { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.ai-dock-caret { display: grid; place-items: center; color: var(--text-tertiary); }
+.ai-dock-caret svg { width: 16px; height: 16px; }
+
+/* Chat panel */
+.ai-panel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 384px;
+  max-width: calc(100vw - 40px);
+  height: 560px;
+  max-height: calc(100vh - 40px);
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+  overflow: hidden;
+  animation: ai-pop var(--dur-med) var(--ease-out);
+}
+@keyframes ai-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-surface-2);
+}
+.ai-head-title { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.ai-head-icon {
+  width: 30px; height: 30px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--radius-md);
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-500), var(--violet-500));
+}
+.ai-head-icon svg { width: 17px; height: 17px; }
+.ai-head-meta { min-width: 0; }
+.ai-head-name { font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text-primary); }
+.ai-head-ctx {
+  font-size: var(--text-xs); color: var(--text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px;
+}
+.ai-head-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.ai-head-actions .icon-btn { width: 30px; height: 30px; }
+.ai-head-actions .icon-btn svg { width: 16px; height: 16px; }
+
+/* Messages */
+.ai-msgs { flex: 1; overflow-y: auto; padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
+.ai-msg {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  white-space: normal;
+  word-wrap: break-word;
+}
+.ai-msg code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--bg-inset);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+.ai-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-bottom-right-radius: var(--radius-sm);
+}
+.ai-assistant {
+  align-self: flex-start;
+  background: var(--bg-inset);
+  color: var(--text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.ai-muted { color: var(--text-tertiary); }
+
+/* Quick-reply option buttons (fix-agent clarification) */
+.ai-opts { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ai-opt {
+  text-align: left;
+  padding: 8px 11px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
+}
+.ai-opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.ai-opt:disabled { cursor: default; opacity: 0.55; }
+.ai-opt.chosen { border-color: var(--accent); color: var(--accent); font-weight: var(--weight-semibold); opacity: 1; }
+.ai-error {
+  color: var(--color-critical);
+  font-size: var(--text-sm);
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1);
+}
+
+/* Typing indicator */
+.ai-typing { display: inline-flex; gap: 4px; padding: 2px 0; }
+.ai-typing i {
+  width: 6px; height: 6px; border-radius: var(--radius-full);
+  background: var(--text-tertiary); opacity: 0.5;
+  animation: ai-blink 1.2s infinite ease-in-out;
+}
+.ai-typing i:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ai-blink { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+
+/* Welcome / empty state */
+.ai-welcome { margin: auto 0; text-align: center; padding: var(--space-3) var(--space-2); }
+.ai-welcome-icon {
+  width: 44px; height: 44px; margin: 0 auto var(--space-2);
+  display: grid; place-items: center; border-radius: var(--radius-lg);
+  color: var(--accent); background: var(--accent-soft);
+}
+.ai-welcome-icon svg { width: 24px; height: 24px; }
+.ai-welcome-lead { margin: 0 0 4px; font-weight: var(--weight-semibold); color: var(--text-primary); }
+.ai-welcome-sub { margin: 0 0 var(--space-2); font-size: var(--text-sm); color: var(--text-secondary); }
+.ai-suggest { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.ai-chip {
+  padding: 6px 11px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+}
+.ai-chip:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Input */
+.ai-input {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  border-top: 1px solid var(--border-color);
+}
+.ai-input textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-inset);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1.4;
+  padding: 9px 12px;
+  max-height: 120px;
+}
+.ai-input textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.ai-send {
+  flex: none;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border: none; border-radius: var(--radius-lg);
+  background: var(--accent); color: var(--accent-contrast);
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
+}
+.ai-send:hover:not(:disabled) { background: var(--accent-hover); }
+.ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.ai-send svg { width: 17px; height: 17px; }
+
+@media (max-width: 480px) {
+  .ai-panel { width: calc(100vw - 32px); height: calc(100vh - 96px); }
+}

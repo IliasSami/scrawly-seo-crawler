@@ -1,0 +1,72 @@
+[project]
+name = "sentinelseo"
+version = "1.0.0"
+description = "Scrawly: free, open-source technical SEO and GEO crawler and site audit tool (a free alternative to paid desktop SEO crawlers), with safe, reversible WordPress fixes."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Ilias Sami", email = "me@iliassami.com" }]
+maintainers = [{ name = "Ilias Sami", email = "me@iliassami.com" }]
+keywords = ["seo", "technical-seo", "seo-crawler", "seo-audit", "site-audit", "geo", "generative-engine-optimization", "aeo", "llms-txt", "core-web-vitals", "wordpress", "screaming-frog-alternative", "sitebulb-alternative"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: MacOS X",
+  "Environment :: Win32 (MS Windows)",
+  "Environment :: X11 Applications",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Other Audience",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+  "Topic :: Internet :: WWW/HTTP :: Site Management",
+  "Topic :: Internet :: WWW/HTTP :: Site Management :: Link Checking",
+]
+dependencies = [ "fastapi>=0.110", "httpx>=0.27.0", "playwright>=1.42.0", "sqlalchemy>=2.0.28", "structlog>=24.1.0", "pydantic>=2.6.3", "fastmcp>=0.1.0", "tenacity>=8.2.3", "datasketch>=1.6.4", "sqlalchemy", "fastmcp", "cryptography", "python-dotenv", "google-api-python-client", "jinja2", "requests", "selectolax", "protego", "lxml>=5.0.0", "pypdf>=4.0.0", "argon2-cffi>=23.1.0"]
+
+[build-system]
+requires = [ "hatchling",]
+build-backend = "hatchling.build"
+
+# Console entry: `scrawly` launches the native desktop app (see sentinelseo.desktop).
+[project.scripts]
+scrawly = "sentinelseo.desktop:main"
+
+[project.optional-dependencies]
+dev = [ "pytest>=8.1.1", "pytest-asyncio>=0.23.5", "respx>=0.21.1", "mypy>=1.9.0", "ruff>=0.3.2",]
+# Desktop GUI runtime (native window + local server).
+desktop = [ "pywebview>=5.0", "uvicorn>=0.29.0",]
+
+[project.urls]
+Homepage = "https://iliassami.github.io/scrawly-seo-crawler/"
+Repository = "https://github.com/IliasSami/scrawly-seo-crawler"
+Documentation = "https://github.com/IliasSami/scrawly-seo-crawler#readme"
+Issues = "https://github.com/IliasSami/scrawly-seo-crawler/issues"
+Changelog = "https://github.com/IliasSami/scrawly-seo-crawler/blob/main/CHANGELOG.md"
+Author = "https://iliassami.com/"
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+follow_imports = "skip"
+exclude = [ ".venv",]
+[[tool.mypy.overrides]]
+module = "numpy.*"
+follow_imports = "skip"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "googleapiclient.*"
+ignore_missing_imports = true
+
+[tool.ruff.lint]
+ignore = [ "E501", "B904",]
+
+[tool.hatch.build.targets.wheel]
+packages = [ "src/sentinelseo",]

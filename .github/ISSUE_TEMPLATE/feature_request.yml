@@ -1,0 +1,15 @@
+name: Feature or check request
+description: Suggest an improvement, a new check, or a better way to explain an issue
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Scrawly to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does it matter for SEO or AI search?
+      description: Links to documentation or examples are welcome.

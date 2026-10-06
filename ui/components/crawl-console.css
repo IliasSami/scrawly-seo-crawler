@@ -1,0 +1,153 @@
+/* ui/components/crawl-console.css — persistent live crawl console */
+.cc {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 900; /* below toasts(1100)/modals(1000), above content */
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  font-size: 13px;
+}
+.cc.hidden { display: none; }
+
+/* Minimized → collapse panel to a pill */
+.cc .cc-pill { display: none; }
+.cc.cc-min-on .cc-panel { display: none; }
+.cc.cc-min-on .cc-pill { display: inline-flex; }
+
+.cc-pill {
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--bg-body);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  font-family: inherit;
+}
+.cc-pill-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-passed);
+  animation: cc-pulse 1.4s ease-out infinite;
+}
+.cc-pill-pct { opacity: 0.8; }
+
+.cc-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: min(70vh, 620px);
+}
+
+.cc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+.cc-head-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cc-live {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--color-critical);
+}
+.cc-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-critical); animation: cc-pulse 1.4s ease-out infinite; }
+.cc-target { font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-head-actions { display: flex; gap: 2px; }
+.cc-head-actions button {
+  width: 26px; height: 26px; border: none; background: transparent;
+  color: var(--text-secondary); cursor: pointer; border-radius: var(--radius-sm);
+  font-size: 15px; line-height: 1;
+}
+.cc-head-actions button:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+
+.cc-phase {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 10px 14px 6px;
+}
+.cc-phase-label { font-weight: 500; color: var(--text-primary); }
+.cc-elapsed { color: var(--text-secondary); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+.cc-bar { height: 6px; background: var(--bg-body); margin: 0 14px; border-radius: 999px; overflow: hidden; }
+.cc-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--color-notice), var(--color-passed));
+  border-radius: 999px;
+  transition: width 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cc-complete .cc-bar-fill { background: var(--color-passed); }
+
+.cc-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px; }
+.cc-metric { text-align: center; }
+.cc-metric-val {
+  font-size: 18px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.cc-metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-top: 2px; }
+
+.cc-tally { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px; }
+.cc-chip {
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.cc-s2 { background: rgba(34,197,94,0.14); color: var(--color-passed); }
+.cc-s3 { background: rgba(37,99,235,0.14); color: var(--color-notice); }
+.cc-s4 { background: rgba(217,119,6,0.16); color: var(--color-warning); }
+.cc-s5 { background: rgba(220,38,38,0.14); color: var(--color-critical); }
+.cc-err { background: rgba(220,38,38,0.14); color: var(--color-critical); }
+.cc-muted { background: var(--bg-body); color: var(--text-secondary); }
+
+.cc-section-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-secondary); padding: 4px 14px; font-weight: 600;
+}
+
+.cc-active, .cc-recent { list-style: none; margin: 0; padding: 0 14px; }
+.cc-active { max-height: 92px; overflow: hidden; }
+.cc-recent { overflow-y: auto; padding-bottom: 12px; }
+.cc-recent { min-height: 0; }
+
+.cc-active-item, .cc-recent-item {
+  display: flex; align-items: center; gap: 8px; padding: 3px 0; min-width: 0;
+}
+.cc-recent-item { animation: cc-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--i, 0) * 18ms); }
+.cc-url { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); font-size: 12px; }
+.cc-depth { font-size: 10px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.cc-empty { color: var(--text-secondary); padding: 3px 0; font-style: italic; }
+
+.cc-code {
+  min-width: 30px; text-align: center; font-size: 11px; font-weight: 700;
+  padding: 1px 5px; border-radius: var(--radius-sm); font-variant-numeric: tabular-nums;
+}
+
+.cc-spin {
+  width: 10px; height: 10px; flex: none; border-radius: 50%;
+  border: 2px solid var(--border-color); border-top-color: var(--color-notice);
+  animation: cc-spin 0.7s linear infinite;
+}
+
+.cc-done { text-align: center; padding: 16px 14px 18px; border-top: 1px solid var(--border-color); }
+.cc-done.hidden { display: none; }
+.cc-done-check {
+  width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 50%;
+  background: rgba(34,197,94,0.14); color: var(--color-passed);
+  display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700;
+}
+.cc-done-text { font-weight: 600; margin-bottom: 10px; }
+
+@keyframes cc-spin { to { transform: rotate(360deg); } }
+@keyframes cc-pulse { 0% { opacity: 1; } 50% { opacity: 0.35; } 100% { opacity: 1; } }
+@keyframes cc-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-bar-fill { transition: none; }
+  .cc-recent-item { animation: none; }
+  .cc-spin { animation: none; border-top-color: var(--border-color); }
+  .cc-pill-dot, .cc-live-dot { animation: none; }
+}

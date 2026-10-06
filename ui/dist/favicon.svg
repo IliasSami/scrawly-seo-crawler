@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Scrawly">
+  <title>Scrawly</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1e2c"/><stop offset="1" stop-color="#0b0c12"/>
+    </linearGradient>
+    <linearGradient id="sg" x1="256" y1="192" x2="768" y2="832" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#818cf8"/><stop offset="1" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+  <rect x="80" y="80" width="864" height="864" rx="196" fill="url(#bg)"/>
+  <rect x="88" y="88" width="848" height="848" rx="188" fill="none" stroke="url(#sg)" stroke-width="14" opacity=".55"/>
+  <path d="M704 256 L352 416 L672 608 L320 768" fill="none" stroke="url(#sg)" stroke-width="76"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="url(#sg)">
+    <circle cx="704" cy="256" r="82"/><circle cx="352" cy="416" r="82"/>
+    <circle cx="672" cy="608" r="82"/><circle cx="320" cy="768" r="82"/>
+  </g>
+</svg>

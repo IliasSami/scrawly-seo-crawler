@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scrawly: free SEO and GEO site audit</title>
+    <meta name="description" content="Scrawly is a free, open-source technical SEO and GEO crawler and site audit tool.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- Theme FOUC guard: apply the saved theme before first paint so there is
+         no flash of the wrong palette. An explicit choice wins over the OS. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('scrawly-theme');
+          if (t === 'light' || t === 'dark') {
+            document.documentElement.setAttribute('data-theme', t);
+          }
+        } catch (e) { /* private mode / disabled storage - fall back to OS */ }
+      })();
+    </script>
+    <!-- Design tokens FIRST - every other stylesheet consumes them. -->
+    <script type="module" crossorigin src="/assets/index-BSLXB0z2.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BwMIQ9pP.css">
+  </head>
+  <body>
+    <div class="app-container">
+      
+      <!-- Global Left Nav -->
+      <nav class="global-nav">
+        <!-- Brand logomark - a crawler hopping node→node (a scrawled "S" path).
+             Clickable: opens the public audit window. -->
+        <div class="nav-brand" id="nav-btn-public" title="Scrawly · Public Audit">
+          <svg class="scrawly-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scrawly">
+            <defs>
+              <linearGradient id="sgGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/>
+              </linearGradient>
+            </defs>
+            <rect class="sg-tile" x="1.75" y="1.75" width="28.5" height="28.5" rx="8.5" stroke="url(#sgGrad)" stroke-width="1.5"/>
+            <path class="sg-path" d="M22 8 L11 13 L21 19 L10 24" stroke="url(#sgGrad)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle class="sg-node sg-n1" cx="22" cy="8" r="2.6"/>
+            <circle class="sg-node sg-n2" cx="11" cy="13" r="2.6"/>
+            <circle class="sg-node sg-n3" cx="21" cy="19" r="2.6"/>
+            <circle class="sg-node sg-n4" cx="10" cy="24" r="2.6"/>
+          </svg>
+        </div>
+        <!-- Projects -->
+        <div class="nav-icon active" title="Projects" id="nav-btn-projects">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        </div>
+        <!-- Configuration -->
+        <div class="nav-icon" title="Configuration" id="nav-btn-config">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+        </div>
+        <!-- Settings -->
+        <div class="nav-icon" title="Settings" id="nav-btn-settings" style="margin-top: auto;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </div>
+      </nav>
+
+      <!-- Main Project Area -->
+      <div class="project-view">
+        
+        <!-- Top bar: context (left) · view tabs (center) · global actions (right) -->
+        <nav class="project-nav">
+          <div class="pn-context">
+            <span class="pn-project" id="active-project-name">Select a Project</span>
+          </div>
+          <div class="pn-tabs">
+            <div class="tab active" data-target="view-dashboard">Dashboard</div>
+            <div class="tab" data-target="view-explorer">Site Explorer</div>
+            <div class="tab" data-target="view-resources">Resources</div>
+            <div class="tab" data-target="view-serp">Titles</div>
+            <div class="tab" data-target="view-issues">Issues &amp; Audits</div>
+            <div class="tab" data-target="view-agentic">Agentic</div>
+            <div class="tab" data-target="view-visuals">Visualizations</div>
+            <div class="tab" data-target="view-compare">Compare</div>
+            <div class="tab" data-target="view-reports">Reports</div>
+          </div>
+          <div class="pn-actions" id="topbar-actions"></div>
+        </nav>
+
+        <main class="main-content">
+          
+          <!-- PUBLIC AUDIT WINDOW (anonymous, URL-only, read-only) -->
+          <section id="view-public" class="view-section">
+            <div id="public-audit-container"></div>
+          </section>
+
+          <!-- HOME / CLIENTS -->
+          <section id="view-home" class="view-section active">
+            <div style="max-width: 860px; margin: 0 auto; padding-top: var(--space-4);">
+              <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: var(--space-1);">
+                <h1>Clients</h1>
+                <button class="btn btn-primary" id="btn-new-client">+ New Client</button>
+              </div>
+              <p style="margin-bottom: var(--space-4);">Add a client, connect its WordPress site, then run audits and guarded fixes.</p>
+              <div id="clients-list" class="flex-col gap-2"></div>
+
+              <div class="flex" style="justify-content: space-between; align-items: center; margin: var(--space-6) 0 var(--space-2);">
+                <h2 style="margin: 0;">Recent audits</h2>
+              </div>
+              <div id="projects-list" class="flex-col gap-2"></div>
+            </div>
+          </section>
+
+          <!-- CRAWL WIZARD -->
+          <section id="view-wizard" class="view-section">
+            <div id="wizard-container" style="max-width: 600px; margin: var(--space-6) auto;"></div>
+          </section>
+
+          <!-- CLIENT SETUP WIZARD -->
+          <section id="view-client-setup" class="view-section">
+            <div id="client-wizard-container" style="max-width: 600px; margin: var(--space-6) auto;"></div>
+          </section>
+
+          <!-- DASHBOARD -->
+          <section id="view-dashboard" class="view-section">
+            <div class="dash">
+              <header class="dash-head">
+                <div class="dash-head-main">
+                  <h1 id="dash-site-name">example.com</h1>
+                  <p class="dash-sub">Last crawled <span id="dash-date"> - </span></p>
+                </div>
+                <button id="dash-btn-recrawl" class="btn btn-secondary">Re-crawl</button>
+              </header>
+
+              <!-- Hero: health ring + key stat tiles -->
+              <div class="dash-hero">
+                <div class="card dash-health">
+                  <div id="health-score-container"></div>
+                  <div class="dash-health-meta">
+                    <div class="dash-health-grade" id="dash-health-label"> - </div>
+                    <div class="dash-health-cap">Site Health Score</div>
+                  </div>
+                </div>
+                <div class="dash-tiles" id="dash-tiles"></div>
+              </div>
+
+              <!-- Charts -->
+              <div class="dash-charts">
+                <div class="card chart-card chart-span-2">
+                  <div class="chart-head"><h3>Issues by severity</h3><span class="chart-sub" id="chart-severity-total"></span></div>
+                  <div id="chart-severity"></div>
+                </div>
+                <div class="card chart-card">
+                  <div class="chart-head"><h3>Response codes</h3></div>
+                  <div id="chart-status"></div>
+                </div>
+                <div class="card chart-card">
+                  <div class="chart-head"><h3>Issues by category</h3></div>
+                  <div id="chart-categories"></div>
+                </div>
+                <div class="card chart-card">
+                  <div class="chart-head"><h3>Crawl depth</h3><span class="chart-sub">pages by clicks from the start page</span></div>
+                  <div id="chart-depth"></div>
+                </div>
+                <div class="card chart-card">
+                  <div class="chart-head"><h3>Segments</h3></div>
+                  <div id="chart-segments"></div>
+                </div>
+                <div class="card chart-card">
+                  <div class="chart-head"><h3>Indexability</h3></div>
+                  <div id="chart-indexability"></div>
+                </div>
+                <div class="card chart-card">
+                  <div class="chart-head"><h3>Fixability</h3><span class="chart-sub">how each issue can be fixed</span></div>
+                  <div id="chart-fixability"></div>
+                </div>
+                <div class="card chart-card chart-span-2">
+                  <div class="chart-head"><h3>Content &amp; performance</h3></div>
+                  <div class="dash-mini" id="dash-mini"></div>
+                </div>
+              </div>
+
+              <!-- Fixed by agent (insight widget - only when fixes exist) -->
+              <div id="dash-fixes"></div>
+
+              <!-- Top issues -->
+              <div class="dash-issues">
+                <div class="dash-section-head">
+                  <h2>Top priority issues</h2>
+                  <button class="btn btn-secondary" id="dash-view-all-issues">View all issues</button>
+                </div>
+                <div id="dash-top-issues" class="flex-col gap-2"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SITE EXPLORER (SF-style dimension tabs + faceted filters) -->
+          <section id="view-explorer" class="view-section" style="padding: 0; height: 100%;">
+            <div class="explorer">
+              <aside class="explorer-rail" id="explorer-rail"></aside>
+              <div class="explorer-main">
+                <div class="explorer-tabs" id="explorer-tabs"></div>
+                <div class="explorer-filterbar" id="explorer-filters"></div>
+                <div id="grid-container" style="flex: 1; overflow: hidden; position: relative;"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- RESOURCES (CSS / JS / media sub-resources) -->
+          <section id="view-resources" class="view-section">
+            <div style="max-width: 1100px; margin: 0 auto;" id="resources-container"></div>
+          </section>
+
+          <!-- SERP MODE (pixel-width snippet measurement) -->
+          <section id="view-serp" class="view-section">
+            <div style="max-width: 900px; margin: 0 auto;" id="serp-container"></div>
+          </section>
+
+          <!-- ISSUES HUB -->
+          <section id="view-issues" class="view-section">
+            <div id="issues-hub-container"></div>
+          </section>
+
+          <!-- AGENTIC CHECKS (origin-level AI-agent readiness) -->
+          <section id="view-agentic" class="view-section">
+            <div id="agentic-container"></div>
+          </section>
+
+          <!-- VISUALIZATIONS -->
+          <section id="view-visuals" class="view-section" style="padding: var(--space-3);">
+            <div style="display: flex; flex-direction: column; height: 100%;">
+              <h1 style="margin-bottom: 2px;">Site Architecture</h1>
+              <p style="margin-bottom: var(--space-1);">Interactive crawl map - hover a node for details, click to inspect, drag to explore. Size + colour by any metric.</p>
+              <div id="site-graph" style="flex: 1; display: flex; flex-direction: column; min-height: 0;"></div>
+            </div>
+          </section>
+          
+          <!-- COMPARE -->
+          <section id="view-compare" class="view-section">
+            <div class="cmp-page">
+              <header class="cmp-head">
+                <h1>Compare crawls</h1>
+                <p>See what changed between two crawls - resolved issues, regressions, and added or removed pages.</p>
+              </header>
+              <div class="cmp-bar card">
+                <div class="cmp-sel">
+                  <label>Baseline <span class="cmp-sel-note">older</span></label>
+                  <select id="compare-sel-previous" class="field-ctl"></select>
+                </div>
+                <div class="cmp-bar-arrow">→</div>
+                <div class="cmp-sel">
+                  <label>Compared with <span class="cmp-sel-note">newer</span></label>
+                  <select id="compare-sel-latest" class="field-ctl"></select>
+                </div>
+                <button id="compare-btn-run" class="btn btn-primary">Compare</button>
+              </div>
+              <div id="compare-results" class="cmp-results">
+                <div class="cmp-empty">Pick two crawls above, then press <strong>Compare</strong>.</div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- REPORTS -->
+          <section id="view-reports" class="view-section">
+            <div class="rpt-page">
+              <header class="rpt-head">
+                <div class="rpt-head-main">
+                  <h1>Audit report</h1>
+                  <p>A polished, client-ready Technical SEO Audit - white-labelled with your brand identity, generated on demand.</p>
+                </div>
+                <div class="rpt-actions">
+                  <button class="btn btn-secondary" id="btn-export-pdf">Print / Save PDF</button>
+                  <button class="btn btn-primary" id="btn-open-report">Open report</button>
+                </div>
+              </header>
+              <div class="rpt-grid">
+                <div class="card rpt-preview" id="rpt-preview">
+                  <div class="rpt-empty">Open a project to preview its report.</div>
+                </div>
+                <div class="rpt-side">
+                  <div class="card">
+                    <h3 class="rpt-h">What's inside</h3>
+                    <ul class="rpt-features">
+                      <li>Branded cover with the overall health score</li>
+                      <li>Executive summary &amp; key metrics</li>
+                      <li>Severity, response-code, category &amp; depth charts</li>
+                      <li>Prioritised recommendations with concrete fixes</li>
+                      <li>Full findings grouped by domain</li>
+                    </ul>
+                  </div>
+                  <div class="card rpt-brand">
+                    <h3 class="rpt-h">Branding</h3>
+                    <div id="rpt-brand-status" class="rpt-brand-status"> - </div>
+                    <button class="btn btn-secondary btn-sm" id="rpt-brand-edit">Customise branding</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- CONFIGURATION -->
+          <section id="view-config" class="view-section">
+            <div id="config-container" style="max-width: 860px; margin: 0 auto;"></div>
+          </section>
+
+          <!-- SETTINGS -->
+          <section id="view-settings" class="view-section">
+            <div class="settings-page">
+              <header class="settings-head">
+                <h1>Settings</h1>
+                <p class="settings-sub">App-wide connections, keys and report branding. Crawl behavior - depth, rendering, URL rules, extraction - lives in <a href="#" id="settings-link-config">Configuration profiles</a>.</p>
+              </header>
+
+              <!-- AI provider -->
+              <div class="card settings-card">
+                <div class="settings-card-head">
+                  <h3>AI provider</h3>
+                  <span class="settings-card-desc">Powers AI fix suggestions and the floating audit analyst. Bring your own key - any Anthropic or OpenAI-compatible endpoint (OpenAI, DeepSeek, OpenRouter, GLM, Nara, custom…). Your key is stored on this computer and never shown here.</span>
+                </div>
+                <div class="settings-grid">
+                  <label class="field">
+                    <span class="field-label">Provider
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">Pick a preset to auto-fill the endpoint and model. Choose “Custom” for any OpenAI-compatible API.</span></button>
+                    </span>
+                    <select id="set-ai-provider" class="field-ctl">
+                      <option value="anthropic">Anthropic (Claude)</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="deepseek">DeepSeek</option>
+                      <option value="openrouter">OpenRouter</option>
+                      <option value="glm">GLM / Zhipu</option>
+                      <option value="nara">Nara Router</option>
+                      <option value="opencode">OpenCode</option>
+                      <option value="custom">Custom (OpenAI-compatible)</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">API format
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">The wire protocol. “Anthropic” for Claude’s Messages API; “OpenAI-compatible” for everything else.</span></button>
+                    </span>
+                    <select id="set-ai-kind" class="field-ctl">
+                      <option value="openai">OpenAI-compatible</option>
+                      <option value="anthropic">Anthropic</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Base URL
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">The API endpoint root, e.g. https://api.openai.com/v1. Presets fill this for you.</span></button>
+                    </span>
+                    <input type="text" id="set-ai-base" class="field-ctl mono" placeholder="https://api.example.com/v1">
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Model
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">The model identifier the provider expects, for example claude-sonnet-5 or gpt-4o-mini.</span></button>
+                    </span>
+                    <input type="text" id="set-ai-model" class="field-ctl mono" placeholder="model name">
+                  </label>
+                  <label class="field">
+                    <span class="field-label">API key <span id="set-ai-key-hint" class="settings-card-desc"></span>
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">Stored on this computer. Leave blank to keep the saved key when re-saving other fields.</span></button>
+                    </span>
+                    <input type="password" id="set-ai-key" class="field-ctl mono" placeholder="sk-… (leave blank to keep saved)">
+                  </label>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn btn-secondary" id="settings-btn-ai-test">Test connection</button>
+                  <button class="btn btn-primary" id="settings-btn-ai-save">Save</button>
+                </div>
+                <div id="ai-status" class="settings-status"></div>
+              </div>
+
+              <!-- Report branding (white-label) -->
+              <div class="card settings-card">
+                <div class="settings-card-head">
+                  <h3>Report branding</h3>
+                  <span class="settings-card-desc">White-label the exported Technical SEO Audit report with your own identity. Applied to every report you generate.</span>
+                </div>
+                <div class="settings-grid">
+                  <label class="field">
+                    <span class="field-label">Agency name
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">Shown on the report cover and footer. Defaults to “Scrawly”.</span></button>
+                    </span>
+                    <input type="text" id="set-brand-name" class="field-ctl" placeholder="Your agency">
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Accent color
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">Your brand color, used for headings, charts and highlights in the report.</span></button>
+                    </span>
+                    <input type="color" id="set-brand-color" class="field-ctl field-ctl--sm" value="#6366f1">
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Logo URL
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">Optional. A public https link to your logo (PNG/SVG). Shown on the report cover.</span></button>
+                    </span>
+                    <input type="text" id="set-brand-logo" class="field-ctl mono" placeholder="https://…/logo.png">
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Contact line
+                      <button type="button" class="help" aria-label="Help">?<span class="help-tip">Optional footer line - website, email or phone shown on every page.</span></button>
+                    </span>
+                    <input type="text" id="set-brand-contact" class="field-ctl" placeholder="hello@youragency.com">
+                  </label>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn btn-primary" id="settings-btn-brand-save">Save branding</button>
+                </div>
+                <div id="brand-status" class="settings-status"></div>
+              </div>
+
+              <!-- Integrations -->
+              <div class="settings-section-head">
+                <h2>Integrations</h2>
+                <p>Connect the services Scrawly enriches crawls with. Secrets live in <code>.env</code> and are never shown here.</p>
+              </div>
+              <div id="integrations-container"></div>
+
+              <!-- WordPress -->
+              <div class="card settings-card">
+                <div class="settings-card-head">
+                  <h3>WordPress connections</h3>
+                  <span class="settings-card-desc">Each client connects its own WordPress site through the setup wizard, enabling guarded auto-fixes.</span>
+                </div>
+                <button class="btn btn-secondary" id="settings-link-clients">Manage clients</button>
+              </div>
+
+              <!-- Pointer to Configuration -->
+              <div class="settings-hint">
+                <div class="settings-hint-body">
+                  <strong>Looking for crawl settings?</strong>
+                  <span>Depth, rendering, robots, URL include/exclude, extraction and duplicate rules live in reusable Configuration profiles.</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="settings-open-config">Open Configuration</button>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
+
+      <!-- Detail Drawer -->
+      <div id="detail-drawer" class="drawer-overlay hidden">
+        <div class="drawer-panel">
+          <!-- drawer.js -->
+        </div>
+      </div>
+      <!-- The old form-based Fix modal was replaced by the autonomous Fix agent
+           (components/fix-agent.js): clicking Fix dispatches the agent, streams
+           progress onto the button, and asks any clarifying questions through
+           the chat assistant. No modal needed. -->
+
+    </div>
+    
+  </body>
+</html>

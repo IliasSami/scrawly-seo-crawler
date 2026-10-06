@@ -1,0 +1,44 @@
+/* ui/components/data-grid.css — Explorer grid specifics; the base table look
+   comes from the shared .stbl primitive (table.css). */
+.data-grid-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--bg-surface);
+}
+
+/* Explorer cells are dense mono data (URLs, metrics) with ellipsis. */
+.data-grid td {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.data-grid tbody tr { cursor: pointer; }
+/* Checkbox column stays compact + sans. */
+.data-grid th:first-child,
+.data-grid td:first-child { width: 40px; font-family: var(--font-sans); }
+
+/* Bulk Action Bar */
+.bulk-action-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: translateY(100%);
+  transition: transform 0.2s ease-out;
+  z-index: 5;
+}
+
+.bulk-action-bar.visible {
+  transform: translateY(0);
+}

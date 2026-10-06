@@ -1,0 +1,45 @@
+# Secrets (Invariant I5 — never commit credentials)
+.env
+.env.*
+!.env.example
+*-service-account*.json
+scrawly-*.json
+client_secret*.json
+secrets/
+*.oauth-token.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Local DB + generated artifacts
+.dev-data/
+scrawly.db
+scrawly.db-journal
+scrawly_ws_*.db
+scrawly_ws_*.db-journal
+report_*.html
+uvicorn.log
+typecheck_output.txt
+
+# Node / frontend
+node_modules/
+
+# OS
+.DS_Store
+
+# Control-plane database
+scrawly_control.db
+scrawly_control*.db
+cp_test*.db
+
+# Generated desktop launchers (machine-specific absolute paths)
+Scrawly.command
+Scrawly.bat
+scrawly.sh
+Scrawly.app/

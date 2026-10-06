@@ -1,0 +1,69 @@
+name: install
+
+# Installs Scrawly the way users do (the one-line installer) on macOS, Windows
+# and Linux, then runs a smoke test: the engine starts, the interface is served,
+# and a PDF renders with the crawler browser. Runs on the public repository.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: install-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    if: ${{ !github.event.repository.private }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      SCRAWLY_REPO: ${{ github.workspace }}
+      SCRAWLY_HOME: ${{ runner.temp }}/scrawly
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Only used when the interface isn't shipped prebuilt (development copies).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: One-line installer (macOS, Linux)
+        if: runner.os != 'Windows'
+        run: bash install.sh
+
+      - name: One-line installer (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./install.ps1
+
+      - name: Browser system libraries (Linux runners only)
+        if: runner.os == 'Linux'
+        run: sudo "$SCRAWLY_HOME/.venv/bin/python" -m playwright install-deps chromium
+
+      - name: Smoke test (macOS, Linux)
+        if: runner.os != 'Windows'
+        working-directory: ${{ runner.temp }}/scrawly
+        run: .venv/bin/python scripts/smoke_test.py
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ${{ runner.temp }}/scrawly
+        run: .venv\Scripts\python scripts\smoke_test.py
+
+      - name: App entry created
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+            macOS)   test -d "$HOME/Applications/Scrawly.app" ;;
+            Linux)   test -f "$HOME/.local/share/applications/scrawly.desktop" ;;
+            Windows) test -f "$APPDATA/Microsoft/Windows/Start Menu/Programs/Scrawly.lnk" ;;
+          esac

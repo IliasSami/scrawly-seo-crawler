@@ -1,0 +1,2223 @@
+checks:
+  - check_id: A01
+    domain: Crawlability & Indexability
+    title: Blocked by robots.txt
+    description: 'Detects: Blocked by robots.txt'
+    why_it_matters: Important URL disallowed; content never crawled/indexed
+    default_severity: Critical
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: A02
+    domain: Crawlability & Indexability
+    title: Robots.txt disallows CSS/JS
+    description: 'Detects: Robots.txt disallows CSS/JS'
+    why_it_matters: "Blocks rendering resources \u2192 Google can't render page"
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: A03
+    domain: Crawlability & Indexability
+    title: Robots.txt missing / returns 5xx
+    description: 'Detects: Robots.txt missing / returns 5xx'
+    why_it_matters: Crawlers may treat whole site as disallowed on 5xx
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: A04
+    domain: Crawlability & Indexability
+    title: Meta robots `noindex` on key page
+    description: 'Detects: Meta robots `noindex` on key page'
+    why_it_matters: Page dropped from index
+    default_severity: Critical
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: A05
+    domain: Crawlability & Indexability
+    title: X-Robots-Tag `noindex` (header)
+    description: 'Detects: X-Robots-Tag `noindex` (header)'
+    why_it_matters: Header-level noindex, easy to miss
+    default_severity: Critical
+    fix_tier: REVIEW
+    data_source: Hd
+    fix_template: null
+  - check_id: A06
+    domain: Crawlability & Indexability
+    title: '`noindex` + `follow` vs `noindex,nofollow` mismatch'
+    description: 'Detects: `noindex` + `follow` vs `noindex,nofollow` mismatch'
+    why_it_matters: Link equity handling differs; misconfig
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: A07
+    domain: Crawlability & Indexability
+    title: Conflicting index signals (meta vs header vs canonical)
+    description: 'Detects: Conflicting index signals (meta vs header vs canonical)'
+    why_it_matters: Ambiguous directives; unpredictable indexing
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C+Hd
+    fix_template: null
+  - check_id: A08
+    domain: Crawlability & Indexability
+    title: '`noindex` present in response but removed by JS (or vice-versa)'
+    description: 'Detects: `noindex` present in response but removed by JS (or vice-versa)'
+    why_it_matters: Render-dependent indexing risk
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: A09
+    domain: Crawlability & Indexability
+    title: Orphan URL (in sitemap/GSC but no internal inlinks)
+    description: 'Detects: Orphan URL (in sitemap/GSC but no internal inlinks)'
+    why_it_matters: Not discoverable via crawl; wasted page
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C+X
+    fix_template: null
+  - check_id: A10
+    domain: Crawlability & Indexability
+    title: Excessive crawl depth (>4 clicks from home)
+    description: 'Detects: Excessive crawl depth (>4 clicks from home)'
+    why_it_matters: Deep pages crawled/indexed less
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: A11
+    domain: Crawlability & Indexability
+    title: 'Crawl-budget waste: many low-value indexable URLs (params, faceted)'
+    description: 'Detects: Crawl-budget waste: many low-value indexable URLs (params,
+      faceted)'
+    why_it_matters: Dilutes crawl of important pages
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: A12
+    domain: Crawlability & Indexability
+    title: Non-indexable page receiving internal links
+    description: 'Detects: Non-indexable page receiving internal links'
+    why_it_matters: Link equity leaking to dead ends
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: A13
+    domain: Crawlability & Indexability
+    title: Nofollowed internal links to important pages
+    description: 'Detects: Nofollowed internal links to important pages'
+    why_it_matters: Blocks equity/discovery internally
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: A14
+    domain: Crawlability & Indexability
+    title: Meta robots `nosnippet`/`noarchive`/`max-snippet` unexpected
+    description: 'Detects: Meta robots `nosnippet`/`noarchive`/`max-snippet` unexpected'
+    why_it_matters: Suppresses SERP display features
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: A15
+    domain: Crawlability & Indexability
+    title: Disallowed URL still internally linked
+    description: 'Detects: Disallowed URL still internally linked'
+    why_it_matters: Confusing signals; wasted links
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: B01
+    domain: Response codes & redirects
+    title: 4xx client errors (esp. 404)
+    description: 'Detects: 4xx client errors (esp. 404)'
+    why_it_matters: Broken pages; wasted crawl; bad UX
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: Hd
+    fix_template: null
+  - check_id: B02
+    domain: Response codes & redirects
+    title: 5xx server errors
+    description: 'Detects: 5xx server errors'
+    why_it_matters: Server failing; severe if on key/many pages
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: B03
+    domain: Response codes & redirects
+    title: Soft 404 (200 status, "not found" content)
+    description: 'Detects: Soft 404 (200 status, "not found" content)'
+    why_it_matters: Thin/empty page indexed as valid
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: B04
+    domain: Response codes & redirects
+    title: "Broken internal links (\u21924xx/5xx)"
+    description: "Detects: Broken internal links (\u21924xx/5xx)"
+    why_it_matters: Equity loss + UX; list inlink sources
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: B05
+    domain: Response codes & redirects
+    title: Broken external (outbound) links
+    description: 'Detects: Broken external (outbound) links'
+    why_it_matters: UX + trust signal degradation
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: B06
+    domain: Response codes & redirects
+    title: "Redirect chains (A\u2192B\u2192C\u2026)"
+    description: "Detects: Redirect chains (A\u2192B\u2192C\u2026)"
+    why_it_matters: Wastes crawl, dilutes equity, slows load
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: B07
+    domain: Response codes & redirects
+    title: Redirect loops
+    description: 'Detects: Redirect loops'
+    why_it_matters: Page unreachable
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: B08
+    domain: Response codes & redirects
+    title: Temporary redirect (302/307) that should be 301/308
+    description: 'Detects: Temporary redirect (302/307) that should be 301/308'
+    why_it_matters: Equity may not fully pass
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: Hd
+    fix_template: null
+  - check_id: B09
+    domain: Response codes & redirects
+    title: Internal links pointing to redirects
+    description: 'Detects: Internal links pointing to redirects'
+    why_it_matters: Should link final URL directly
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: B10
+    domain: Response codes & redirects
+    title: "Canonical \u2192 redirected URL"
+    description: "Detects: Canonical \u2192 redirected URL"
+    why_it_matters: Canonical target itself redirects
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: B11
+    domain: Response codes & redirects
+    title: Redirect to 4xx/5xx (broken redirect target)
+    description: 'Detects: Redirect to 4xx/5xx (broken redirect target)'
+    why_it_matters: Dead redirect
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: B12
+    domain: Response codes & redirects
+    title: Meta-refresh / JS redirect
+    description: 'Detects: Meta-refresh / JS redirect'
+    why_it_matters: Non-standard redirect; weaker signal
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: B13
+    domain: Response codes & redirects
+    title: "HTTP \u2192 HTTPS redirect missing"
+    description: "Detects: HTTP \u2192 HTTPS redirect missing"
+    why_it_matters: Insecure access path
+    default_severity: High
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: B14
+    domain: Response codes & redirects
+    title: Mixed redirect status across templates (migration check)
+    description: 'Detects: Mixed redirect status across templates (migration check)'
+    why_it_matters: Inconsistent migration mapping
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: C01
+    domain: Canonicalization
+    title: Missing canonical
+    description: 'Detects: Missing canonical'
+    why_it_matters: No consolidation signal on dup-prone URLs
+    default_severity: Medium
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: C02
+    domain: Canonicalization
+    title: Non-self-referential canonical (unintended)
+    description: 'Detects: Non-self-referential canonical (unintended)'
+    why_it_matters: Page canonicalizes away, drops from index
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: C03
+    domain: Canonicalization
+    title: Canonical to non-indexable (noindex) URL
+    description: 'Detects: Canonical to non-indexable (noindex) URL'
+    why_it_matters: Contradictory signals
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: C04
+    domain: Canonicalization
+    title: Canonical to 4xx/5xx/redirect
+    description: 'Detects: Canonical to 4xx/5xx/redirect'
+    why_it_matters: Broken canonical target
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: C05
+    domain: Canonicalization
+    title: Multiple conflicting canonicals on one page
+    description: 'Detects: Multiple conflicting canonicals on one page'
+    why_it_matters: Google may ignore all
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: C06
+    domain: Canonicalization
+    title: Canonical set only in HTTP header vs HTML mismatch
+    description: 'Detects: Canonical set only in HTTP header vs HTML mismatch'
+    why_it_matters: Conflicting canonical sources
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C+Hd
+    fix_template: null
+  - check_id: C07
+    domain: Canonicalization
+    title: Canonical changed/added/removed by JS (response vs render)
+    description: 'Detects: Canonical changed/added/removed by JS (response vs render)'
+    why_it_matters: Render-dependent canonical
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: C08
+    domain: Canonicalization
+    title: Cross-domain canonical (unintended)
+    description: 'Detects: Cross-domain canonical (unintended)'
+    why_it_matters: Consolidates to another domain
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: C09
+    domain: Canonicalization
+    title: Canonical uses relative / protocol-relative / non-absolute URL
+    description: 'Detects: Canonical uses relative / protocol-relative / non-absolute
+      URL'
+    why_it_matters: Fragile, misparsed
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: C10
+    domain: Canonicalization
+    title: Parameterized URL not canonicalized to clean URL
+    description: 'Detects: Parameterized URL not canonicalized to clean URL'
+    why_it_matters: Duplicate param variants indexed
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: C11
+    domain: Canonicalization
+    title: Paginated page 2+ canonicalized to page 1 (anti-pattern)
+    description: 'Detects: Paginated page 2+ canonicalized to page 1 (anti-pattern)'
+    why_it_matters: Google drops component pages
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: D01
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Missing page title
+    description: 'Detects: Missing page title'
+    why_it_matters: No primary relevance/CTR signal
+    default_severity: High
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D02
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Duplicate titles (across URLs)
+    description: 'Detects: Duplicate titles (across URLs)'
+    why_it_matters: Cannibalization, unclear target
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: D03
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Title too long (>~60 chars / ~575px)
+    description: 'Detects: Title too long (>~60 chars / ~575px)'
+    why_it_matters: Truncated in SERP
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D04
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Title too short (<~30 chars)
+    description: 'Detects: Title too short (<~30 chars)'
+    why_it_matters: Under-optimized
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D05
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Multiple `<title>` elements
+    description: 'Detects: Multiple `<title>` elements'
+    why_it_matters: Invalid; ambiguous
+    default_severity: Medium
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D06
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Title same as H1 (exact) on all pages
+    description: 'Detects: Title same as H1 (exact) on all pages'
+    why_it_matters: Missed keyword coverage
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: D07
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Missing meta description
+    description: 'Detects: Missing meta description'
+    why_it_matters: Google auto-generates; lost CTR control
+    default_severity: Medium
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D08
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Duplicate meta descriptions
+    description: 'Detects: Duplicate meta descriptions'
+    why_it_matters: Weak differentiation
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: D09
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Meta description too thin for AI
+    description: "Detects: meta description present but too short to give AI or searchers useful context"
+    why_it_matters: Little context for AI assistants and searchers
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D10
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Meta description too short
+    description: "Detects: (folded into D09 \u2014 meta description too thin for AI)"
+    why_it_matters: Under-used real estate
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D11
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Multiple meta descriptions
+    description: 'Detects: Multiple meta descriptions'
+    why_it_matters: Ambiguous
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D12
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Missing H1
+    description: 'Detects: Missing H1'
+    why_it_matters: Lost relevance signal
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: D13
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Multiple H1s
+    description: 'Detects: Multiple H1s'
+    why_it_matters: Diluted primary topic (context-dependent)
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: D14
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Duplicate H1 across URLs
+    description: 'Detects: Duplicate H1 across URLs'
+    why_it_matters: Cannibalization
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: D15
+    domain: "On-page \u2014 titles, meta, headings"
+    title: "Broken heading order (skips H2\u2192H4)"
+    description: "Detects: Broken heading order (skips H2\u2192H4)"
+    why_it_matters: Accessibility + structure signal
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: D16
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Empty heading tags
+    description: 'Detects: Empty heading tags'
+    why_it_matters: Structural noise
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: D17
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Title/description created or modified by JS only
+    description: 'Detects: Title/description created or modified by JS only'
+    why_it_matters: Render-dependent metadata
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: D18
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Meta keywords tag present
+    description: 'Detects: Meta keywords tag present'
+    why_it_matters: Legacy/ignored; sometimes spam signal
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D19
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Missing/incorrect OG + Twitter Card tags
+    description: 'Detects: Missing/incorrect OG + Twitter Card tags'
+    why_it_matters: Poor social/preview rendering
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: D20
+    domain: "On-page \u2014 titles, meta, headings"
+    title: Missing viewport meta
+    description: 'Detects: Missing viewport meta'
+    why_it_matters: Mobile rendering broken
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: E01
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Exact duplicate content (MD5 body hash)
+    description: 'Detects: Exact duplicate content (MD5 body hash)'
+    why_it_matters: Panda-class quality risk; index dilution
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: E02
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Near-duplicate content (similarity threshold)
+    description: 'Detects: Near-duplicate content (similarity threshold)'
+    why_it_matters: Product variants, boilerplate pages
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: E03
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Technically duplicate URLs (same path+query, dup content)
+    description: 'Detects: Technically duplicate URLs (same path+query, dup content)'
+    why_it_matters: Parameter/case duplication
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: E04
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Thin content (low word count / low main-content ratio)
+    description: 'Detects: Thin content (low word count / low main-content ratio)'
+    why_it_matters: Weak page, may not rank/be cited
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: E05
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Duplicate title + meta description pair
+    description: 'Detects: Duplicate title + meta description pair'
+    why_it_matters: Strong duplication signal
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: E06
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Keyword cannibalization (same H1/title competing)
+    description: 'Detects: Keyword cannibalization (same H1/title competing)'
+    why_it_matters: Pages compete for same query
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+    status: deferred
+    blocked_by: requires site-level context
+  - check_id: E07
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Boilerplate-heavy pages (nav/footer >> main content)
+    description: 'Detects: Boilerplate-heavy pages (nav/footer >> main content)'
+    why_it_matters: Low unique value
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: E08
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Lorem ipsum / placeholder text detected
+    description: 'Detects: Lorem ipsum / placeholder text detected'
+    why_it_matters: Unfinished content shipped
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: E09
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Spelling/grammar density anomalies (optional, LLM)
+    description: 'Detects: Spelling/grammar density anomalies (optional, LLM)'
+    why_it_matters: Quality/E-E-A-T signal
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: E10
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Low text-to-HTML ratio
+    description: 'Detects: Low text-to-HTML ratio'
+    why_it_matters: Bloat / thin main content
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: E11
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Content hidden behind tabs/accordions/JS interactions
+    description: 'Detects: Content hidden behind tabs/accordions/JS interactions'
+    why_it_matters: Invisible to AI crawlers & partially discounted
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: E12
+    domain: "Content \u2014 duplicate, thin, quality"
+    title: Missing/duplicate publish + modified dates
+    description: 'Detects: Missing/duplicate publish + modified dates'
+    why_it_matters: Freshness signal weak (matters for GEO)
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F01
+    domain: Internal linking & architecture
+    title: Orphan pages (no internal inlinks)
+    description: 'Detects: Orphan pages (no internal inlinks)'
+    why_it_matters: Undiscoverable, low authority
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F02
+    domain: Internal linking & architecture
+    title: Pages with only 1 internal inlink
+    description: 'Detects: Pages with only 1 internal inlink'
+    why_it_matters: Weak internal authority
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F03
+    domain: Internal linking & architecture
+    title: "Excessive on-page links (>~100\u2013150)"
+    description: "Detects: Excessive on-page links (>~100\u2013150)"
+    why_it_matters: Equity dilution, crawl noise
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F04
+    domain: Internal linking & architecture
+    title: "Deep pages (>3\u20134 clicks from home)"
+    description: "Detects: Deep pages (>3\u20134 clicks from home)"
+    why_it_matters: Reduced crawl/rank priority
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F05
+    domain: Internal linking & architecture
+    title: Broken/empty anchor text
+    description: 'Detects: Broken/empty anchor text'
+    why_it_matters: Lost relevance context
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F06
+    domain: Internal linking & architecture
+    title: Generic anchors ("click here", "read more") at scale
+    description: 'Detects: Generic anchors ("click here", "read more") at scale'
+    why_it_matters: Weak topical signal
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F07
+    domain: Internal linking & architecture
+    title: Internal links to non-canonical / redirected URLs
+    description: 'Detects: Internal links to non-canonical / redirected URLs'
+    why_it_matters: Equity misdirected
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F08
+    domain: Internal linking & architecture
+    title: Uncrawlable links (JS onclick, buttons, no `href`)
+    description: 'Detects: Uncrawlable links (JS onclick, buttons, no `href`)'
+    why_it_matters: Bots can't follow
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: F09
+    domain: Internal linking & architecture
+    title: Internal `nofollow` sculpting (unintended)
+    description: 'Detects: Internal `nofollow` sculpting (unintended)'
+    why_it_matters: Blocks equity flow
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F10
+    domain: Internal linking & architecture
+    title: Links created/removed only by JS (response vs render)
+    description: 'Detects: Links created/removed only by JS (response vs render)'
+    why_it_matters: Render-dependent discovery
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: F11
+    domain: Internal linking & architecture
+    title: No breadcrumb / weak hierarchical linking
+    description: 'Detects: No breadcrumb / weak hierarchical linking'
+    why_it_matters: Structure + rich-result loss
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: F12
+    domain: Internal linking & architecture
+    title: Internal link to HTTP (from HTTPS page)
+    description: 'Detects: Internal link to HTTP (from HTTPS page)'
+    why_it_matters: Mixed-content / insecure hop
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: G01
+    domain: External / outbound links
+    title: Broken outbound links (4xx/5xx)
+    description: 'Detects: Broken outbound links (4xx/5xx)'
+    why_it_matters: UX + trust
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: G02
+    domain: External / outbound links
+    title: Outbound links to redirecting URLs
+    description: 'Detects: Outbound links to redirecting URLs'
+    why_it_matters: Minor inefficiency
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: G03
+    domain: External / outbound links
+    title: Links to non-secure (HTTP) external resources
+    description: 'Detects: Links to non-secure (HTTP) external resources'
+    why_it_matters: Trust/security
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: G04
+    domain: External / outbound links
+    title: Missing `rel` on sponsored/UGC links
+    description: 'Detects: Missing `rel` on sponsored/UGC links'
+    why_it_matters: Guideline compliance
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: G05
+    domain: External / outbound links
+    title: Outbound links to malware/spam domains (optional API)
+    description: 'Detects: Outbound links to malware/spam domains (optional API)'
+    why_it_matters: Trust/penalty risk
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: X
+    fix_template: null
+  - check_id: G06
+    domain: External / outbound links
+    title: '`target=_blank` without `rel=noopener`'
+    description: 'Detects: `target=_blank` without `rel=noopener`'
+    why_it_matters: Security (tabnabbing)
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H01
+    domain: Images & media
+    title: Missing alt text (non-decorative)
+    description: 'Detects: Missing alt text (non-decorative)'
+    why_it_matters: Accessibility + image SEO + agentic readability
+    default_severity: Medium
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: H02
+    domain: Images & media
+    title: Decorative image missing empty `alt=""`
+    description: 'Detects: Decorative image missing empty `alt=""`'
+    why_it_matters: Screen readers announce noise
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H03
+    domain: Images & media
+    title: Alt text too long / keyword-stuffed
+    description: 'Detects: Alt text too long / keyword-stuffed'
+    why_it_matters: Spam signal, poor a11y
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H04
+    domain: Images & media
+    title: Images >100KB (unoptimized)
+    description: 'Detects: Images >100KB (unoptimized)'
+    why_it_matters: Page speed / CWV
+    default_severity: Medium
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: H05
+    domain: Images & media
+    title: Images missing width/height (CLS risk)
+    description: 'Detects: Images missing width/height (CLS risk)'
+    why_it_matters: "Layout shift \u2192 CWV + agentic instability"
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H06
+    domain: Images & media
+    title: Broken image src (4xx)
+    description: 'Detects: Broken image src (4xx)'
+    why_it_matters: Missing media
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H07
+    domain: Images & media
+    title: Next-gen format not used (no WebP/AVIF)
+    description: 'Detects: Next-gen format not used (no WebP/AVIF)'
+    why_it_matters: Speed opportunity
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H08
+    domain: Images & media
+    title: Missing lazy-loading below the fold
+    description: 'Detects: Missing lazy-loading below the fold'
+    why_it_matters: Speed opportunity
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: H09
+    domain: Images & media
+    title: Missing `fetchpriority` on LCP image
+    description: 'Detects: Missing `fetchpriority` on LCP image'
+    why_it_matters: LCP optimization
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: H10
+    domain: Images & media
+    title: Oversized images (rendered << natural dimensions)
+    description: 'Detects: Oversized images (rendered << natural dimensions)'
+    why_it_matters: Wasted bytes
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: H11
+    domain: Images & media
+    title: Missing image sitemap entries
+    description: 'Detects: Missing image sitemap entries'
+    why_it_matters: Image discovery
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I01
+    domain: Hreflang / international
+    title: Missing return (reciprocal) hreflang
+    description: 'Detects: Missing return (reciprocal) hreflang'
+    why_it_matters: Cluster invalid
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I02
+    domain: Hreflang / international
+    title: hreflang to non-canonical / non-200 URL
+    description: 'Detects: hreflang to non-canonical / non-200 URL'
+    why_it_matters: Broken alternate
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I03
+    domain: Hreflang / international
+    title: Invalid language/region codes
+    description: 'Detects: Invalid language/region codes'
+    why_it_matters: Ignored by Google
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I04
+    domain: Hreflang / international
+    title: Missing `x-default`
+    description: 'Detects: Missing `x-default`'
+    why_it_matters: No fallback for unmatched locales
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I05
+    domain: Hreflang / international
+    title: hreflang + canonical conflict (canonical to different lang)
+    description: 'Detects: hreflang + canonical conflict (canonical to different lang)'
+    why_it_matters: Contradictory
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I06
+    domain: Hreflang / international
+    title: Multiple/duplicate hreflang entries for same locale
+    description: 'Detects: Multiple/duplicate hreflang entries for same locale'
+    why_it_matters: Ambiguous
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I07
+    domain: Hreflang / international
+    title: hreflang in HTML vs sitemap vs header inconsistency
+    description: 'Detects: hreflang in HTML vs sitemap vs header inconsistency'
+    why_it_matters: Signal split
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: I08
+    domain: Hreflang / international
+    title: Self-referential hreflang missing
+    description: 'Detects: Self-referential hreflang missing'
+    why_it_matters: Cluster incomplete
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J01
+    domain: Structured data / schema
+    title: Missing required property (per type)
+    description: 'Detects: Missing required property (per type)'
+    why_it_matters: Blocks rich-result eligibility
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J02
+    domain: Structured data / schema
+    title: Missing recommended property
+    description: 'Detects: Missing recommended property'
+    why_it_matters: Weakens rich-result display
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J03
+    domain: Structured data / schema
+    title: Invalid JSON-LD syntax
+    description: 'Detects: Invalid JSON-LD syntax'
+    why_it_matters: Markup ignored
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J04
+    domain: Structured data / schema
+    title: Legacy Microdata/RDFa where JSON-LD expected
+    description: 'Detects: Legacy Microdata/RDFa where JSON-LD expected'
+    why_it_matters: Migration cleanup
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J05
+    domain: Structured data / schema
+    title: Schema type mismatch with page content
+    description: 'Detects: Schema type mismatch with page content'
+    why_it_matters: Spam/guideline risk
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J06
+    domain: Structured data / schema
+    title: Duplicate/conflicting `@id` references
+    description: 'Detects: Duplicate/conflicting `@id` references'
+    why_it_matters: Entity graph broken
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J07
+    domain: Structured data / schema
+    title: Missing Organization / LocalBusiness / Website schema
+    description: 'Detects: Missing Organization / LocalBusiness / Website schema'
+    why_it_matters: Entity + local + GEO citation loss
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J08
+    domain: Structured data / schema
+    title: Missing Breadcrumb schema
+    description: 'Detects: Missing Breadcrumb schema'
+    why_it_matters: SERP breadcrumb loss
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J09
+    domain: Structured data / schema
+    title: Missing Article/author/date schema (E-E-A-T, GEO)
+    description: 'Detects: Missing Article/author/date schema (E-E-A-T, GEO)'
+    why_it_matters: AI citation + authorship signal
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J10
+    domain: Structured data / schema
+    title: Missing FAQ/HowTo/Product/Review schema where applicable
+    description: 'Detects: Missing FAQ/HowTo/Product/Review schema where applicable'
+    why_it_matters: Rich-result + AI-answer opportunity
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J11
+    domain: Structured data / schema
+    title: NAP in schema inconsistent with GBP/site (local)
+    description: 'Detects: NAP in schema inconsistent with GBP/site (local)'
+    why_it_matters: Local trust + citation confusion
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: J12
+    domain: Structured data / schema
+    title: ratingValue/reviewCount fabricated or self-serving
+    description: 'Detects: ratingValue/reviewCount fabricated or self-serving'
+    why_it_matters: Guideline violation (manual action risk)
+    default_severity: High
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: J13
+    domain: Structured data / schema
+    title: Schema present in response vs render mismatch
+    description: 'Detects: Schema present in response vs render mismatch'
+    why_it_matters: Render-dependent markup
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: K01
+    domain: XML sitemaps
+    title: Sitemap missing / not referenced in robots.txt
+    description: 'Detects: Sitemap missing / not referenced in robots.txt'
+    why_it_matters: Discovery gap
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K02
+    domain: XML sitemaps
+    title: Sitemap contains non-200 URLs
+    description: 'Detects: Sitemap contains non-200 URLs'
+    why_it_matters: Dirty sitemap; wasted crawl
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K03
+    domain: XML sitemaps
+    title: Sitemap contains noindex / canonicalized-away URLs
+    description: 'Detects: Sitemap contains noindex / canonicalized-away URLs'
+    why_it_matters: Conflicting signals
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K04
+    domain: XML sitemaps
+    title: Sitemap contains redirects
+    description: 'Detects: Sitemap contains redirects'
+    why_it_matters: Should list final URLs
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K05
+    domain: XML sitemaps
+    title: Indexable pages missing from sitemap
+    description: 'Detects: Indexable pages missing from sitemap'
+    why_it_matters: Discovery gap
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K06
+    domain: XML sitemaps
+    title: Sitemap >50k URLs / >50MB (uncompressed)
+    description: 'Detects: Sitemap >50k URLs / >50MB (uncompressed)'
+    why_it_matters: Spec violation
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: K07
+    domain: XML sitemaps
+    title: Invalid XML / malformed sitemap
+    description: 'Detects: Invalid XML / malformed sitemap'
+    why_it_matters: Not parsed
+    default_severity: High
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: K08
+    domain: XML sitemaps
+    title: '`<lastmod>` missing or clearly inaccurate'
+    description: 'Detects: `<lastmod>` missing or clearly inaccurate'
+    why_it_matters: Freshness signal weak
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K09
+    domain: XML sitemaps
+    title: Orphan sitemap URLs (in sitemap, no inlinks)
+    description: 'Detects: Orphan sitemap URLs (in sitemap, no inlinks)'
+    why_it_matters: Weak internal support
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: K10
+    domain: XML sitemaps
+    title: Sitemap not auto-updating (stale vs new content)
+    description: 'Detects: Sitemap not auto-updating (stale vs new content)'
+    why_it_matters: Slow discovery
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: L01
+    domain: Robots directives (file-level)
+    title: '`Disallow: /` (whole site blocked)'
+    description: 'Detects: `Disallow: /` (whole site blocked)'
+    why_it_matters: Catastrophic; usually staging leak
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: L02
+    domain: Robots directives (file-level)
+    title: Important directories disallowed
+    description: 'Detects: Important directories disallowed'
+    why_it_matters: Sections uncrawlable
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: L03
+    domain: Robots directives (file-level)
+    title: CSS/JS/asset paths disallowed
+    description: 'Detects: CSS/JS/asset paths disallowed'
+    why_it_matters: Rendering blocked
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: L04
+    domain: Robots directives (file-level)
+    title: Wildcard/pattern errors
+    description: 'Detects: Wildcard/pattern errors'
+    why_it_matters: Unintended blocking
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: L05
+    domain: Robots directives (file-level)
+    title: Robots.txt not at root / wrong content-type
+    description: 'Detects: Robots.txt not at root / wrong content-type'
+    why_it_matters: Ignored
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: L06
+    domain: Robots directives (file-level)
+    title: Sitemap directive missing
+    description: 'Detects: Sitemap directive missing'
+    why_it_matters: Discovery hint absent
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: L07
+    domain: Robots directives (file-level)
+    title: Crawl-delay set high (throttles Google)
+    description: 'Detects: Crawl-delay set high (throttles Google)'
+    why_it_matters: Slower crawl
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: M01
+    domain: Security
+    title: Site not on HTTPS
+    description: 'Detects: Site not on HTTPS'
+    why_it_matters: Ranking + trust + browser warnings
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: M02
+    domain: Security
+    title: Mixed content (HTTPS page loads HTTP assets)
+    description: 'Detects: Mixed content (HTTPS page loads HTTP assets)'
+    why_it_matters: Security warnings, blocked resources
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: M03
+    domain: Security
+    title: Missing HSTS header
+    description: 'Detects: Missing HSTS header'
+    why_it_matters: Downgrade-attack window
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: M04
+    domain: Security
+    title: Expired / invalid / soon-expiring TLS cert
+    description: 'Detects: Expired / invalid / soon-expiring TLS cert'
+    why_it_matters: Access failure risk
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: M05
+    domain: Security
+    title: Protocol-relative resource links (`//host`)
+    description: 'Detects: Protocol-relative resource links (`//host`)'
+    why_it_matters: Anti-pattern under HTTPS-everywhere
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: M06
+    domain: Security
+    title: Missing security headers (CSP, X-Content-Type-Options, X-Frame-Options,
+      Referrer-Policy)
+    description: 'Detects: Missing security headers (CSP, X-Content-Type-Options,
+      X-Frame-Options, Referrer-Policy)'
+    why_it_matters: Hardening + best-practice audit
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: M07
+    domain: Security
+    title: '`target=_blank` tabnabbing (noopener)'
+    description: 'Detects: `target=_blank` tabnabbing (noopener)'
+    why_it_matters: Security
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: M08
+    domain: Security
+    title: Server/software version leakage in headers
+    description: 'Detects: Server/software version leakage in headers'
+    why_it_matters: Info disclosure
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: M09
+    domain: Security
+    title: WordPress version exposed (generator meta / readme.html)
+    description: 'Detects: WordPress version exposed (generator meta / readme.html)'
+    why_it_matters: Attack-surface disclosure
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: M10
+    domain: Security
+    title: XML-RPC / wp-json user enumeration open
+    description: 'Detects: XML-RPC / wp-json user enumeration open'
+    why_it_matters: WP-specific hardening
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: N01
+    domain: Performance / Core Web Vitals
+    title: LCP > 2.5s (good) / > 4s (poor)
+    description: 'Detects: LCP > 2.5s (good) / > 4s (poor)'
+    why_it_matters: Slow perceived load; CWV
+    default_severity: High
+    fix_tier: FLAG
+    data_source: X
+    fix_template: null
+  - check_id: N02
+    domain: Performance / Core Web Vitals
+    title: INP > 200ms (good) / > 500ms (poor)
+    description: 'Detects: INP > 200ms (good) / > 500ms (poor)'
+    why_it_matters: Poor interactivity (replaced FID Mar-2024)
+    default_severity: High
+    fix_tier: FLAG
+    data_source: X
+    fix_template: null
+  - check_id: N03
+    domain: Performance / Core Web Vitals
+    title: CLS > 0.1 (good) / > 0.25 (poor)
+    description: 'Detects: CLS > 0.1 (good) / > 0.25 (poor)'
+    why_it_matters: Layout instability; also agentic-critical
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: X
+    fix_template: null
+  - check_id: N04
+    domain: Performance / Core Web Vitals
+    title: TTFB slow (>~0.8s)
+    description: 'Detects: TTFB slow (>~0.8s)'
+    why_it_matters: Server/host bottleneck
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: N05
+    domain: Performance / Core Web Vitals
+    title: Render-blocking CSS/JS
+    description: 'Detects: Render-blocking CSS/JS'
+    why_it_matters: Delays first paint
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: N06
+    domain: Performance / Core Web Vitals
+    title: Unminified CSS/JS
+    description: 'Detects: Unminified CSS/JS'
+    why_it_matters: Wasted bytes
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: N07
+    domain: Performance / Core Web Vitals
+    title: No compression (gzip/brotli)
+    description: 'Detects: No compression (gzip/brotli)'
+    why_it_matters: Wasted bytes
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: N08
+    domain: Performance / Core Web Vitals
+    title: No/short cache headers on static assets
+    description: 'Detects: No/short cache headers on static assets'
+    why_it_matters: Repeat-visit speed
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: N09
+    domain: Performance / Core Web Vitals
+    title: Excessive DOM size (agentic + perf)
+    description: 'Detects: Excessive DOM size (agentic + perf)'
+    why_it_matters: Slow render, harder machine parse
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: N10
+    domain: Performance / Core Web Vitals
+    title: "Large total page weight (>~2\u20133MB)"
+    description: "Detects: Large total page weight (>~2\u20133MB)"
+    why_it_matters: Speed
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: N11
+    domain: Performance / Core Web Vitals
+    title: Excessive HTTP requests
+    description: 'Detects: Excessive HTTP requests'
+    why_it_matters: Speed
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: N12
+    domain: Performance / Core Web Vitals
+    title: Missing preconnect/preload for critical origins
+    description: 'Detects: Missing preconnect/preload for critical origins'
+    why_it_matters: Speed opportunity
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: N13
+    domain: Performance / Core Web Vitals
+    title: Font loading causes FOIT/FOUT / no font-display
+    description: 'Detects: Font loading causes FOIT/FOUT / no font-display'
+    why_it_matters: Perceived speed + CLS
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: N14
+    domain: Performance / Core Web Vitals
+    title: Third-party script bloat (analytics/chat/ads)
+    description: 'Detects: Third-party script bloat (analytics/chat/ads)'
+    why_it_matters: Main-thread blocking
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: R
+    fix_template: null
+  - check_id: O01
+    domain: Mobile
+    title: Missing/incorrect viewport meta
+    description: 'Detects: Missing/incorrect viewport meta'
+    why_it_matters: Not mobile-usable
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: O02
+    domain: Mobile
+    title: Tap targets too small / too close
+    description: 'Detects: Tap targets too small / too close'
+    why_it_matters: Mobile UX; usability signal
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: O03
+    domain: Mobile
+    title: Content wider than viewport (horizontal scroll)
+    description: 'Detects: Content wider than viewport (horizontal scroll)'
+    why_it_matters: Mobile UX
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: O04
+    domain: Mobile
+    title: Font size too small on mobile
+    description: 'Detects: Font size too small on mobile'
+    why_it_matters: Readability
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: O05
+    domain: Mobile
+    title: Mobile vs desktop content parity gap (mobile-first index)
+    description: 'Detects: Mobile vs desktop content parity gap (mobile-first index)'
+    why_it_matters: Content missing on mobile render
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: O06
+    domain: Mobile
+    title: Intrusive interstitials/pop-ups on mobile
+    description: 'Detects: Intrusive interstitials/pop-ups on mobile'
+    why_it_matters: Ranking penalty risk
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: O07
+    domain: Mobile
+    title: Blocked resources on mobile UA only
+    description: 'Detects: Blocked resources on mobile UA only'
+    why_it_matters: Cloaked rendering issue
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: P01
+    domain: JavaScript rendering (response vs render)
+    title: Primary content only in rendered DOM (not in response HTML)
+    description: 'Detects: Primary content only in rendered DOM (not in response HTML)'
+    why_it_matters: AI crawlers (no JS) miss it; Google delay
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: P02
+    domain: JavaScript rendering (response vs render)
+    title: Internal links injected only by JS
+    description: 'Detects: Internal links injected only by JS'
+    why_it_matters: Discovery via render only
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: P03
+    domain: JavaScript rendering (response vs render)
+    title: Title/meta/canonical/robots differ response vs render
+    description: 'Detects: Title/meta/canonical/robots differ response vs render'
+    why_it_matters: Indexing ambiguity
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: P04
+    domain: JavaScript rendering (response vs render)
+    title: Render blocked by JS error / failed resource
+    description: 'Detects: Render blocked by JS error / failed resource'
+    why_it_matters: Blank/partial render
+    default_severity: High
+    fix_tier: FLAG
+    data_source: R
+    fix_template: null
+  - check_id: P05
+    domain: JavaScript rendering (response vs render)
+    title: Long render/hydration time
+    description: 'Detects: Long render/hydration time'
+    why_it_matters: Slow indexing + agentic latency
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: P06
+    domain: JavaScript rendering (response vs render)
+    title: Client-side-only routing without SSR/prerender
+    description: 'Detects: Client-side-only routing without SSR/prerender'
+    why_it_matters: Whole-site render dependency
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q01
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Interactive element missing accessible name/label
+    description: 'Detects: Interactive element missing accessible name/label'
+    why_it_matters: Fails agentic a11y tree + screen readers
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q02
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Invalid/unsupported ARIA attributes
+    description: 'Detects: Invalid/unsupported ARIA attributes'
+    why_it_matters: Breaks a11y tree (fails agentic audit)
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q03
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Form field without associated label
+    description: 'Detects: Form field without associated label'
+    why_it_matters: Agents/screen readers can't operate
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q04
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Insufficient color contrast
+    description: 'Detects: Insufficient color contrast'
+    why_it_matters: WCAG fail
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q05
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Content interactive but hidden from a11y tree
+    description: 'Detects: Content interactive but hidden from a11y tree'
+    why_it_matters: Agent can't perceive actionable element
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q06
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Improper role/parent-child nesting (tree integrity)
+    description: 'Detects: Improper role/parent-child nesting (tree integrity)'
+    why_it_matters: Machine misreads structure
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q07
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Missing document language attribute
+    description: 'Detects: Missing document language attribute'
+    why_it_matters: a11y + international
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: Q08
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Non-semantic markup for interactive controls (div-as-button)
+    description: 'Detects: Non-semantic markup for interactive controls (div-as-button)'
+    why_it_matters: Agents/AT can't identify actions
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: Q09
+    domain: "Accessibility (WCAG subset \u2014 dual SEO + agentic value)"
+    title: Missing skip links / landmark regions
+    description: 'Detects: Missing skip links / landmark regions'
+    why_it_matters: Navigation structure
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: R01
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: AI training crawlers blocked in robots.txt (GPTBot, ClaudeBot, CCBot, Google-Extended)
+    description: 'Detects: AI training crawlers blocked in robots.txt (GPTBot, ClaudeBot,
+      CCBot, Google-Extended)'
+    why_it_matters: Excluded from AI training/knowledge (a *choice*, but flag it)
+    default_severity: Info
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R02
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: AI **search** crawlers blocked (OAI-SearchBot, Claude-SearchBot, PerplexityBot)
+    description: 'Detects: AI **search** crawlers blocked (OAI-SearchBot, Claude-SearchBot,
+      PerplexityBot)'
+    why_it_matters: "Excluded from AI search answers \u2192 visibility loss"
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R03
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: AI user-fetch agents blocked (ChatGPT-User, Claude-User, Perplexity-User)
+    description: 'Detects: AI user-fetch agents blocked (ChatGPT-User, Claude-User,
+      Perplexity-User)'
+    why_it_matters: Users can't pull your page into AI
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R04
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: CDN/WAF (Cloudflare) silently blocks AI bots
+    description: 'Detects: CDN/WAF (Cloudflare) silently blocks AI bots'
+    why_it_matters: AI traffic 403'd despite robots.txt allow
+    default_severity: High
+    fix_tier: FLAG
+    data_source: X
+    fix_template: null
+  - check_id: R05
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Primary content client-side rendered (AI bots don't run JS)
+    description: 'Detects: Primary content client-side rendered (AI bots don''t run
+      JS)'
+    why_it_matters: AI can't read content
+    default_severity: High
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: R06
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Content behind login/paywall/interaction
+    description: 'Detects: Content behind login/paywall/interaction'
+    why_it_matters: Invisible to AI
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: R07
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Missing answer-capsule structure (direct answer before context)
+    description: 'Detects: Missing answer-capsule structure (direct answer before
+      context)'
+    why_it_matters: Lower extraction/citation odds
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R08
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Weak heading hierarchy / not scannable (one topic per section)
+    description: 'Detects: Weak heading hierarchy / not scannable (one topic per section)'
+    why_it_matters: Harder to extract passages
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R09
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Missing author + freshness signals (E-E-A-T for GEO)
+    description: 'Detects: Missing author + freshness signals (E-E-A-T for GEO)'
+    why_it_matters: AI favors sourced, recent content
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R10
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Missing/weak entity + Organization/Website schema
+    description: 'Detects: Missing/weak entity + Organization/Website schema'
+    why_it_matters: AI can't confirm entity for citation
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R11
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: Google-Agent / Google-Extended handling not set intentionally
+    description: 'Detects: Google-Agent / Google-Extended handling not set intentionally'
+    why_it_matters: Uncontrolled AI-agent posture
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: R12
+    domain: "GEO \u2014 AI crawler access & citation readiness"
+    title: No first-party structured facts (pricing, FAQ, policies) exposed
+    description: 'Detects: No first-party structured facts (pricing, FAQ, policies)
+      exposed'
+    why_it_matters: Misses ~44% first-party citation share
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: S01
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Missing `llms.txt` at root
+    description: 'Detects: Missing `llms.txt` at root'
+    why_it_matters: Lighthouse informational; curated AI index absent
+    default_severity: Info
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: S02
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: '`llms.txt` present but missing H1 / too short / no links'
+    description: 'Detects: `llms.txt` present but missing H1 / too short / no links'
+    why_it_matters: Fails Lighthouse llms.txt sub-checks
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: S03
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: "`llms.txt` is a link dump (800\u20131200 unsorted links)"
+    description: "Detects: `llms.txt` is a link dump (800\u20131200 unsorted links)"
+    why_it_matters: "Low-signal; aim 20\u201350 high-value links"
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: S04
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Optional `llms-full.txt` absent (large-doc sites)
+    description: 'Detects: Optional `llms-full.txt` absent (large-doc sites)'
+    why_it_matters: Full-content AI index missing
+    default_severity: Info
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: S05
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Accessibility tree fails agent-centric names/labels
+    description: 'Detects: Accessibility tree fails agent-centric names/labels'
+    why_it_matters: Agents can't identify interactive elements (fails agentic audit)
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S06
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Accessibility tree integrity fail (roles/relationships)
+    description: 'Detects: Accessibility tree integrity fail (roles/relationships)'
+    why_it_matters: Agents misread page structure
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S07
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Interactive-but-invisible-to-a11y-tree elements
+    description: 'Detects: Interactive-but-invisible-to-a11y-tree elements'
+    why_it_matters: Agent can't act on them
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S08
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: '**Post-load CLS** (menus/late banners shift after settle)'
+    description: 'Detects: **Post-load CLS** (menus/late banners shift after settle)'
+    why_it_matters: "Agent clicks stale coordinates \u2192 task fails; lab CLS misses\
+      \ this"
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S09
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Forms lack WebMCP declarative annotations
+    description: 'Detects: Forms lack WebMCP declarative annotations'
+    why_it_matters: Agents parse pixels instead of calling tools
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S10
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: WebMCP tool schema invalid / incomplete (if registered)
+    description: 'Detects: WebMCP tool schema invalid / incomplete (if registered)'
+    why_it_matters: Registered tools unusable by agents
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S11
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Key flows (checkout/booking/contact) not agent-completable
+    description: 'Detects: Key flows (checkout/booking/contact) not agent-completable'
+    why_it_matters: AI-visibility leakage on money actions
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S12
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: Dynamic JS tool/element registration timing issues
+    description: 'Detects: Dynamic JS tool/element registration timing issues'
+    why_it_matters: Agents miss elements during snapshot
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: S13
+    domain: Agentic-web experience (Lighthouse 13.3 Agentic Browsing + beyond)
+    title: No AI-assistant traffic channel/attribution set up (GA4)
+    description: 'Detects: No AI-assistant traffic channel/attribution set up (GA4)'
+    why_it_matters: Can't measure agentic/AI referral traffic
+    default_severity: Info
+    fix_tier: FLAG
+    data_source: X
+    fix_template: null
+  - check_id: T01
+    domain: URL structure & hygiene
+    title: Uppercase characters in URL
+    description: 'Detects: Uppercase characters in URL'
+    why_it_matters: Case-duplication risk
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T02
+    domain: URL structure & hygiene
+    title: Whitespace / unsafe / non-ASCII chars
+    description: 'Detects: Whitespace / unsafe / non-ASCII chars'
+    why_it_matters: Encoding issues
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T03
+    domain: URL structure & hygiene
+    title: Double slashes / repetitive path segments
+    description: 'Detects: Double slashes / repetitive path segments'
+    why_it_matters: Duplication, messy
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T04
+    domain: URL structure & hygiene
+    title: Excessive URL length (>~115 chars)
+    description: 'Detects: Excessive URL length (>~115 chars)'
+    why_it_matters: Truncation, usability
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T05
+    domain: URL structure & hygiene
+    title: Session IDs / tracking params in indexable URLs
+    description: 'Detects: Session IDs / tracking params in indexable URLs'
+    why_it_matters: Duplication
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T06
+    domain: URL structure & hygiene
+    title: Deep/over-nested path structure
+    description: 'Detects: Deep/over-nested path structure'
+    why_it_matters: Architecture signal
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T07
+    domain: URL structure & hygiene
+    title: Non-descriptive URLs (`?p=123`)
+    description: 'Detects: Non-descriptive URLs (`?p=123`)'
+    why_it_matters: Weak topical + AI signal
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T08
+    domain: URL structure & hygiene
+    title: Trailing-slash inconsistency (both resolve 200)
+    description: 'Detects: Trailing-slash inconsistency (both resolve 200)'
+    why_it_matters: Duplication
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: T09
+    domain: URL structure & hygiene
+    title: Underscores instead of hyphens as word separators
+    description: 'Detects: Underscores instead of hyphens as word separators'
+    why_it_matters: Legacy convention
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: U01
+    domain: Pagination
+    title: Paginated pages `noindex`'d
+    description: 'Detects: Paginated pages `noindex`''d'
+    why_it_matters: "Google stops following \u2192 products lost"
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: U02
+    domain: Pagination
+    title: Multiple rel=next/prev on one page
+    description: 'Detects: Multiple rel=next/prev on one page'
+    why_it_matters: Invalid pagination markup
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: U03
+    domain: Pagination
+    title: Page 2+ canonicalized to page 1
+    description: 'Detects: Page 2+ canonicalized to page 1'
+    why_it_matters: Component pages dropped
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: U04
+    domain: Pagination
+    title: Infinite scroll with no paginated URLs
+    description: 'Detects: Infinite scroll with no paginated URLs'
+    why_it_matters: Content undiscoverable
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: U05
+    domain: Pagination
+    title: Missing "view-all" or crawl path for deep lists
+    description: 'Detects: Missing "view-all" or crawl path for deep lists'
+    why_it_matters: Deep items uncrawled
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V01
+    domain: WordPress-specific
+    title: Default "Uncategorized" category indexed
+    description: 'Detects: Default "Uncategorized" category indexed'
+    why_it_matters: Thin taxonomy page
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V02
+    domain: WordPress-specific
+    title: Tag/author/date archives indexed & thin/duplicate
+    description: 'Detects: Tag/author/date archives indexed & thin/duplicate'
+    why_it_matters: Index bloat
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V03
+    domain: WordPress-specific
+    title: Attachment (media) pages indexed
+    description: 'Detects: Attachment (media) pages indexed'
+    why_it_matters: Thin auto-generated pages
+    default_severity: Medium
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: V04
+    domain: WordPress-specific
+    title: Paginated comment URLs (`/comment-page-`) indexed
+    description: 'Detects: Paginated comment URLs (`/comment-page-`) indexed'
+    why_it_matters: Duplication
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V05
+    domain: WordPress-specific
+    title: Search results pages (`?s=`) indexable
+    description: 'Detects: Search results pages (`?s=`) indexable'
+    why_it_matters: Infinite thin pages
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V06
+    domain: WordPress-specific
+    title: Both SEO plugins active (Yoast + RankMath)
+    description: 'Detects: Both SEO plugins active (Yoast + RankMath)'
+    why_it_matters: Conflicting meta/schema output
+    default_severity: High
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: V07
+    domain: WordPress-specific
+    title: Missing/duplicate canonical from theme + plugin both emitting
+    description: 'Detects: Missing/duplicate canonical from theme + plugin both emitting'
+    why_it_matters: Double canonical
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: R
+    fix_template: null
+  - check_id: V08
+    domain: WordPress-specific
+    title: Auto-generated image sizes bloating media / no WebP
+    description: 'Detects: Auto-generated image sizes bloating media / no WebP'
+    why_it_matters: Speed
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V09
+    domain: WordPress-specific
+    title: '`?replytocom` / feed / trackback URLs crawlable'
+    description: 'Detects: `?replytocom` / feed / trackback URLs crawlable'
+    why_it_matters: Crawl waste
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: V10
+    domain: WordPress-specific
+    title: Staging/dev site indexable (noindex leaked to prod, or dev public)
+    description: 'Detects: Staging/dev site indexable (noindex leaked to prod, or
+      dev public)'
+    why_it_matters: Duplicate-site / leak disaster
+    default_severity: Critical
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: V11
+    domain: WordPress-specific
+    title: Heavy plugin count inflating render/requests
+    description: 'Detects: Heavy plugin count inflating render/requests'
+    why_it_matters: Speed
+    default_severity: Medium
+    fix_tier: FLAG
+    data_source: R
+    fix_template: null
+  - check_id: V12
+    domain: WordPress-specific
+    title: REST API / feeds exposing more than intended
+    description: 'Detects: REST API / feeds exposing more than intended'
+    why_it_matters: Hardening
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: Hd
+    fix_template: null
+  - check_id: W01
+    domain: Analytics, tracking & config (context, mostly info)
+    title: Missing/duplicate GA4 or GTM tags
+    description: 'Detects: Missing/duplicate GA4 or GTM tags'
+    why_it_matters: Measurement gap
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: R
+    fix_template: null
+  - check_id: W02
+    domain: Analytics, tracking & config (context, mostly info)
+    title: Missing GSC verification
+    description: 'Detects: Missing GSC verification'
+    why_it_matters: No Search Console data
+    default_severity: Low
+    fix_tier: FLAG
+    data_source: C
+    fix_template: null
+  - check_id: W03
+    domain: Analytics, tracking & config (context, mostly info)
+    title: Favicon missing / broken
+    description: 'Detects: Favicon missing / broken'
+    why_it_matters: Branding + SERP display
+    default_severity: Low
+    fix_tier: AUTO
+    data_source: C
+    fix_template: null
+  - check_id: W04
+    domain: Analytics, tracking & config (context, mostly info)
+    title: Missing 404 template / unhelpful 404
+    description: 'Detects: Missing 404 template / unhelpful 404'
+    why_it_matters: UX + recovery
+    default_severity: Low
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null
+  - check_id: W05
+    domain: Analytics, tracking & config (context, mostly info)
+    title: Multiple homepage versions resolve 200 (/, /index.php, /home)
+    description: 'Detects: Multiple homepage versions resolve 200 (/, /index.php,
+      /home)'
+    why_it_matters: Duplication
+    default_severity: Medium
+    fix_tier: REVIEW
+    data_source: C
+    fix_template: null

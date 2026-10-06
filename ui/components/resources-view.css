@@ -1,0 +1,27 @@
+/* Resources view — layout specifics only. The table look (.stbl), stat chips
+   (.chip-stat), filter pills (.pill) and status/type chips (.status-chip /
+   .type-tag) come from the shared primitives in table.css. */
+.rv-stats { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-3); }
+
+.rv-bar { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); flex-wrap: wrap; }
+.rv-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.rv-search {
+  flex: 1; min-width: 200px; padding: 7px 12px; font-size: var(--text-base);
+  background: var(--bg-surface); border: 1px solid var(--border-color);
+  border-radius: var(--radius-md); color: var(--text-primary);
+}
+.rv-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+
+.rv-table-wrap {
+  border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+  overflow: auto; max-height: calc(100vh - 320px); background: var(--bg-surface);
+}
+/* Broken rows get a faint critical wash on top of the shared row styles. */
+.rv-table tr.rv-broken td { background: color-mix(in srgb, var(--color-critical) 7%, transparent); }
+.rv-table tr.rv-broken:hover td { background: color-mix(in srgb, var(--color-critical) 12%, transparent); }
+
+.rv-ct { color: var(--text-secondary); font-size: var(--text-sm); }
+.rv-url { max-width: 0; }
+.rv-url a { color: var(--text-primary); text-decoration: none; }
+.rv-url a:hover { color: var(--accent); text-decoration: underline; }
+.rv-host { display: block; font-size: 10.5px; color: var(--text-tertiary); }

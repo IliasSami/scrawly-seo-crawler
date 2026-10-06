@@ -1,0 +1,37 @@
+name: Bug report
+description: Something in Scrawly doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Scrawly. Please don't include passwords or API keys.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: site
+    attributes:
+      label: Kind of website (optional)
+      description: WordPress, Shopify, Next.js, custom... (no need to share the address)
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS, Windows, Linux]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Scrawly version
+      description: Shown under About (the "i" icon at the bottom of the left bar).
+  - type: textarea
+    id: log
+    attributes:
+      label: scrawly.log (if it crashed)
+      description: From your data folder; see docs/DESKTOP.md, section 4.
+      render: text

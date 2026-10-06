@@ -1,0 +1,50 @@
+/* Help rail: Send feedback + About at the bottom of the icon rail. */
+.global-nav .help-rail-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+}
+.global-nav .help-rail-btn:focus-visible,
+.global-nav .nav-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.global-nav .help-rail-btn svg { width: 20px; height: 20px; }
+
+.about-card { max-width: 420px; }
+.about-version {
+  margin: -2px 0 10px;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+.about-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  margin: 4px 0 6px;
+  font-size: 13.5px;
+}
+.about-meta dt { color: var(--text-tertiary); }
+.about-meta dd { margin: 0; color: var(--text-primary); }
+.about-meta a { color: var(--accent); text-decoration: none; }
+.about-meta a:hover { text-decoration: underline; }
+
+/* Feedback fallback when the note can't be delivered. */
+.fb-fallback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.fb-fallback button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+}
+.fb-fallback button:hover { border-color: var(--accent); color: var(--accent); }

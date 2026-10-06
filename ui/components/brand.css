@@ -1,0 +1,72 @@
+/* Scrawly brand — logomark (nav) + wordmark (hero).
+   The mark is a crawler hopping page→page along a scrawled path; on load the
+   path draws itself and the nodes light up in sequence. Minimal, on-brand. */
+
+.nav-brand {
+  width: 40px; height: 40px; margin-bottom: 22px;
+  display: grid; place-items: center; cursor: pointer; border-radius: 11px;
+  transition: transform .18s ease, background .18s ease;
+}
+.nav-brand:hover { background: color-mix(in srgb, var(--color-notice) 12%, transparent); transform: translateY(-1px); }
+.nav-brand:active { transform: translateY(0); }
+
+.scrawly-mark { width: 30px; height: 30px; display: block; overflow: visible; }
+.scrawly-mark .sg-tile { opacity: .30; }
+
+.scrawly-mark .sg-path {
+  stroke-dasharray: 46; stroke-dashoffset: 46;
+  animation: sg-draw 1.1s ease forwards .1s;
+}
+.scrawly-mark .sg-node {
+  fill: url(#sgGrad); opacity: 0; transform-box: fill-box; transform-origin: center;
+  animation: sg-pop .4s ease forwards;
+}
+.scrawly-mark .sg-n1 { animation-delay: .25s; }
+.scrawly-mark .sg-n2 { animation-delay: .5s; }
+.scrawly-mark .sg-n3 { animation-delay: .75s; }
+.scrawly-mark .sg-n4 { animation-delay: 1s; }
+
+/* Re-run the crawl animation on hover (a little life). */
+.nav-brand:hover .scrawly-mark .sg-path { animation: sg-draw 1s ease forwards; }
+.nav-brand:hover .scrawly-mark .sg-node { animation: sg-pop .4s ease forwards; }
+.nav-brand:hover .sg-n1 { animation-delay: .15s; }
+.nav-brand:hover .sg-n2 { animation-delay: .35s; }
+.nav-brand:hover .sg-n3 { animation-delay: .55s; }
+.nav-brand:hover .sg-n4 { animation-delay: .75s; }
+
+@keyframes sg-draw { to { stroke-dashoffset: 0; } }
+@keyframes sg-pop {
+  0% { opacity: 0; transform: scale(.2); }
+  70% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---- Wordmark (public hero) ---- */
+.scrawly-wordmark {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-weight: 700; letter-spacing: -0.02em;
+}
+.scrawly-wordmark .scrawly-mark { width: 34px; height: 34px; }
+.scrawly-wordmark .wm-text {
+  font-size: 26px; position: relative;
+  background: linear-gradient(90deg, var(--text-primary) 0%, var(--text-primary) 100%);
+  -webkit-background-clip: text; background-clip: text;
+}
+/* Animated "scan" sheen sweeping across the wordmark, like a crawler passing. */
+.scrawly-wordmark .wm-text::after {
+  content: 'Scrawly'; position: absolute; inset: 0; color: transparent;
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--color-notice) 90%, #fff) 50%, transparent 100%);
+  -webkit-background-clip: text; background-clip: text;
+  background-size: 220% 100%; background-repeat: no-repeat;
+  animation: wm-scan 3.4s ease-in-out infinite;
+}
+@keyframes wm-scan {
+  0%, 15% { background-position: 180% 0; }
+  60%, 100% { background-position: -80% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrawly-mark .sg-path { animation: none; stroke-dashoffset: 0; }
+  .scrawly-mark .sg-node { animation: none; opacity: 1; }
+  .scrawly-wordmark .wm-text::after { animation: none; }
+}

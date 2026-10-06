@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use Scrawly, please cite it as below."
+type: software
+title: "Scrawly: free, open-source SEO crawler and site audit tool"
+abstract: >-
+  Scrawly is a free, open-source desktop SEO crawler and technical site audit tool for
+  macOS, Windows and Linux. It crawls a website, runs 250 technical SEO, GEO (Generative
+  Engine Optimization) and agentic-web checks on every page, maps the site architecture,
+  produces HTML and PDF reports, and can apply safe, reversible fixes to WordPress sites.
+authors:
+  - given-names: Ilias
+    family-names: Sami
+    email: me@iliassami.com
+    website: "https://iliassami.com/"
+version: 1.0.0
+date-released: "2026-10-06"
+license: MIT
+repository-code: "https://github.com/IliasSami/scrawly-seo-crawler"
+url: "https://iliassami.github.io/scrawly-seo-crawler/"
+keywords:
+  - SEO
+  - technical SEO
+  - SEO crawler
+  - site audit
+  - GEO
+  - generative engine optimization
+  - AEO
+  - answer engine optimization
+  - llms.txt
+  - Core Web Vitals
+  - WordPress
+  - Screaming Frog alternative
+  - Sitebulb alternative

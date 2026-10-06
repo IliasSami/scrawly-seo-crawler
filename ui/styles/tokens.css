@@ -1,0 +1,288 @@
+/* ============================================================================
+   Scrawly Design System — Design Tokens (single source of truth)
+   ----------------------------------------------------------------------------
+   Model: a FIXED palette (brand / neutral / status never change) plus a
+   SEMANTIC layer (surfaces, text, borders, accents) that is remapped per theme.
+
+   Theme resolution:
+     • :root                                   → light (the base)
+     • @media (prefers-color-scheme: dark) on  → dark, ONLY when the user has
+       :root:not([data-theme="light"])           not explicitly chosen light
+     • :root[data-theme="dark"]                → dark, explicit (wins over OS)
+     • :root[data-theme="light"]               → light is already the base
+
+   The theme toggle stamps data-theme on <html>; an explicit choice always wins
+   over the OS preference. Charts and every component read ONLY semantic tokens,
+   so flipping the theme is pure CSS — no JS re-render needed.
+   ========================================================================== */
+
+:root {
+  /* ---- Fixed brand ramp (indigo → violet, from the logomark) ------------- */
+  --brand-50:  #eef2ff;
+  --brand-100: #e0e7ff;
+  --brand-200: #c7d2fe;
+  --brand-300: #a5b4fc;
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #5457e6;
+  --brand-700: #4649c9;
+  --violet-400: #c084fc;
+  --violet-500: #a855f7;
+  --violet-600: #9333ea;
+
+  /* ---- Fixed neutral ramp (slate) — 50 is always lightest --------------- */
+  --gray-50:  #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  --gray-950: #020617;
+
+  /* ---- Fixed status hues (light/dark pick shades below) ------------------ */
+  --red-500:    #dc2626;  --red-400:    #ef4444;
+  --amber-500:  #d97706;  --amber-400:  #f59e0b;
+  --blue-500:   #2563eb;  --blue-400:   #3b82f6;
+  --green-500:  #16a34a;  --green-400:  #22c55e;
+
+  /* =========================================================================
+     SEMANTIC LAYER — light theme (base)
+     ========================================================================= */
+
+  /* Surfaces & structure */
+  --bg-body:          #f6f7f9;
+  --bg-surface:       #ffffff;
+  --bg-surface-2:     #fbfcfd;   /* subtly raised (tiles, table headers) */
+  --bg-surface-hover: #f1f5f9;
+  --bg-inset:         #f1f5f9;   /* wells, inputs, code */
+  /* Aliases (resolve per theme because they point at the themed tokens). */
+  --bg-card:          var(--bg-surface);   /* cards, dialogs */
+  --bg-input:         var(--bg-inset);
+  /* Severity aliases used by issue cards (High/Medium/Low/Info). */
+  --color-high:       var(--color-warning);
+  --color-medium:     var(--color-warning);
+  --color-low:        var(--color-notice);
+  --color-info:       var(--text-tertiary);
+  --border-color:     #e5e8ec;
+  --border-strong:    #d2d8e0;
+
+  /* Text */
+  --text-primary:     #0f172a;
+  --text-secondary:   #5b6472;
+  --text-tertiary:    #8b93a1;
+  --text-inverse:     #ffffff;
+
+  /* Accent (brand) */
+  --accent:           var(--brand-500);
+  --accent-hover:     var(--brand-600);
+  --accent-contrast:  #ffffff;
+  --accent-soft:      rgba(99, 102, 241, 0.10);
+  --accent-ring:      rgba(99, 102, 241, 0.35);
+
+  /* Status (semantic) + soft backgrounds */
+  --color-critical:   var(--red-500);
+  --color-warning:    var(--amber-500);
+  --color-notice:     var(--blue-500);
+  --color-passed:     var(--green-500);
+  --critical-soft:    rgba(220, 38, 38, 0.10);
+  --warning-soft:     rgba(217, 119, 6, 0.12);
+  --notice-soft:      rgba(37, 99, 235, 0.10);
+  --passed-soft:      rgba(22, 163, 74, 0.11);
+
+  /* Primary action (kept for back-compat with existing .btn-primary) */
+  --color-primary:        var(--gray-900);
+  --color-primary-hover:  var(--gray-800);
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.10), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 28px -6px rgba(15, 23, 42, 0.16), 0 4px 10px -4px rgba(15, 23, 42, 0.08);
+  --elev-1: var(--shadow-sm);
+  --elev-2: var(--shadow-md);
+  --elev-3: var(--shadow-lg);
+
+  /* Data-viz categorical palette (light) */
+  --chart-1: #6366f1;   /* indigo  */
+  --chart-2: #a855f7;   /* violet  */
+  --chart-3: #0ea5e9;   /* sky     */
+  --chart-4: #10b981;   /* emerald */
+  --chart-5: #f59e0b;   /* amber   */
+  --chart-6: #ef4444;   /* red     */
+  --chart-7: #14b8a6;   /* teal    */
+  --chart-8: #ec4899;   /* pink    */
+  --chart-grid:  rgba(15, 23, 42, 0.08);
+  --chart-axis:  #8b93a1;
+  --chart-track: #eef1f5;
+
+  /* =========================================================================
+     TYPOGRAPHY
+     ========================================================================= */
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+               Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;   /* compact enterprise body default */
+  --text-md:   14px;
+  --text-lg:   16px;
+  --text-xl:   20px;
+  --text-2xl:  28px;
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+
+  --weight-regular:  400;
+  --weight-normal:   var(--weight-regular);
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --tracking-tight: -0.01em;
+  --tracking-wide:  0.04em;
+
+  /* =========================================================================
+     SPACING (8px base) · RADIUS · MOTION  — names kept stable for back-compat
+     ========================================================================= */
+  --space-0:   0;
+  --space-0-5: 4px;
+  --space-1:   8px;
+  --space-2:   16px;
+  --space-3:   24px;
+  --space-4:   32px;
+  --space-5:   40px;
+  --space-6:   48px;
+
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 999px;
+
+  --dur-fast: 120ms;
+  --dur-med:  200ms;
+  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Fixed shell metrics (referenced by layout + explorer height math) */
+  --rail-w:     56px;
+  --topbar-h:   56px;
+
+  color-scheme: light;
+}
+
+/* ===========================================================================
+   DARK SEMANTIC LAYER
+   Declared once as a custom-property block, applied to both the OS-preference
+   selector and the explicit-choice selector so there is a single dark source.
+   =========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-body:          #0a0b0e;
+    --bg-surface:       #121418;
+    --bg-surface-2:     #16191f;
+    --bg-surface-hover: #1c1f26;
+    --bg-inset:         #0f1116;
+    --border-color:     #23262e;
+    --border-strong:    #313640;
+
+    --text-primary:     #f3f5f7;
+    --text-secondary:   #9aa3b0;
+    --text-tertiary:    #6b7280;
+    --text-inverse:     #0a0b0e;
+
+    --accent:           var(--brand-400);
+    --accent-hover:     var(--brand-300);
+    --accent-contrast:  #0a0b0e;
+    --accent-soft:      rgba(129, 140, 248, 0.14);
+    --accent-ring:      rgba(129, 140, 248, 0.40);
+
+    --color-critical:   var(--red-400);
+    --color-warning:    var(--amber-400);
+    --color-notice:     var(--blue-400);
+    --color-passed:     var(--green-400);
+    --critical-soft:    rgba(239, 68, 68, 0.15);
+    --warning-soft:     rgba(245, 158, 11, 0.16);
+    --notice-soft:      rgba(59, 130, 246, 0.16);
+    --passed-soft:      rgba(34, 197, 94, 0.15);
+
+    --color-primary:        #ffffff;
+    --color-primary-hover:  #e5e8ec;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 16px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 6px 14px -6px rgba(0, 0, 0, 0.5);
+
+    --chart-1: #818cf8;
+    --chart-2: #c084fc;
+    --chart-3: #38bdf8;
+    --chart-4: #34d399;
+    --chart-5: #fbbf24;
+    --chart-6: #f87171;
+    --chart-7: #2dd4bf;
+    --chart-8: #f472b6;
+    --chart-grid:  rgba(255, 255, 255, 0.07);
+    --chart-axis:  #6b7280;
+    --chart-track: #1c1f26;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg-body:          #0a0b0e;
+  --bg-surface:       #121418;
+  --bg-surface-2:     #16191f;
+  --bg-surface-hover: #1c1f26;
+  --bg-inset:         #0f1116;
+  --border-color:     #23262e;
+  --border-strong:    #313640;
+
+  --text-primary:     #f3f5f7;
+  --text-secondary:   #9aa3b0;
+  --text-tertiary:    #6b7280;
+  --text-inverse:     #0a0b0e;
+
+  --accent:           var(--brand-400);
+  --accent-hover:     var(--brand-300);
+  --accent-contrast:  #0a0b0e;
+  --accent-soft:      rgba(129, 140, 248, 0.14);
+  --accent-ring:      rgba(129, 140, 248, 0.40);
+
+  --color-critical:   var(--red-400);
+  --color-warning:    var(--amber-400);
+  --color-notice:     var(--blue-400);
+  --color-passed:     var(--green-400);
+  --critical-soft:    rgba(239, 68, 68, 0.15);
+  --warning-soft:     rgba(245, 158, 11, 0.16);
+  --notice-soft:      rgba(59, 130, 246, 0.16);
+  --passed-soft:      rgba(34, 197, 94, 0.15);
+
+  --color-primary:        #ffffff;
+  --color-primary-hover:  #e5e8ec;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 16px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 6px 14px -6px rgba(0, 0, 0, 0.5);
+
+  --chart-1: #818cf8;
+  --chart-2: #c084fc;
+  --chart-3: #38bdf8;
+  --chart-4: #34d399;
+  --chart-5: #fbbf24;
+  --chart-6: #f87171;
+  --chart-7: #2dd4bf;
+  --chart-8: #f472b6;
+  --chart-grid:  rgba(255, 255, 255, 0.07);
+  --chart-axis:  #6b7280;
+  --chart-track: #1c1f26;
+
+  color-scheme: dark;
+}
