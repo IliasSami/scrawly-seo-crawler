@@ -24,7 +24,10 @@ def _der(days_left: int) -> bytes:
             .not_valid_before(now - timedelta(days=1))
             .not_valid_after(now + timedelta(days=days_left, hours=1))
             .sign(key, hashes.SHA256()))
-    return cert.public_bytes(serialization.Encoding.DER)
+    # Typed as Any: some mypy/cryptography combinations mistype these enum members.
+    der_format: Any = serialization.Encoding.DER
+    der: bytes = cert.public_bytes(der_format)
+    return der
 
 
 class _SSLObj:

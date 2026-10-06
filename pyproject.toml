@@ -39,7 +39,8 @@ build-backend = "hatchling.build"
 scrawly = "sentinelseo.desktop:main"
 
 [project.optional-dependencies]
-dev = [ "pytest>=8.1.1", "pytest-asyncio>=0.23.5", "respx>=0.21.1", "mypy>=1.9.0", "ruff>=0.3.2",]
+# Lint/type tools are pinned so CI and local checks always agree.
+dev = [ "pytest>=8.1.1", "pytest-asyncio>=0.23.5", "respx>=0.21.1", "mypy==2.4.0", "ruff==0.16.10",]
 # Desktop GUI runtime (native window + local server).
 desktop = [ "pywebview>=5.0", "uvicorn>=0.29.0",]
 
