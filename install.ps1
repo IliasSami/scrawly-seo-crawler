@@ -69,5 +69,8 @@ if (Test-Path (Join-Path $Dest '.git')) {
 }
 
 Set-Location $Dest
+# Show the installer's symbols correctly; Python falls back safely otherwise.
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+$env:PYTHONIOENCODING = 'utf-8'
 if ($py.Count -gt 1) { & $py[0] $py[1] 'scripts\install.py' } else { & $py[0] 'scripts\install.py' }
 if ($LASTEXITCODE -ne 0) { throw "The Scrawly installer stopped with an error (code $LASTEXITCODE). See the messages above." }

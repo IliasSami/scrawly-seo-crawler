@@ -68,5 +68,5 @@ jobs:
           case "$RUNNER_OS" in
             macOS)   test -d "$HOME/Applications/Scrawly.app" ;;
             Linux)   test -f "$HOME/.local/share/applications/scrawly.desktop" ;;
-            Windows) test -f "$APPDATA/Microsoft/Windows/Start Menu/Programs/Scrawly.lnk" ;;
+            Windows) test -f "$(cygpath "$APPDATA")/Microsoft/Windows/Start Menu/Programs/Scrawly.lnk" ;;
           esac

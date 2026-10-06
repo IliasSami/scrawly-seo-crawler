@@ -105,7 +105,20 @@ def _first_run_hint() -> str:
     return hint
 
 
+def _safe_console() -> None:
+    """Windows consoles often use a legacy code page that can't show characters
+    like ✅ or …; replace those instead of crashing the installer."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main() -> None:
+    _safe_console()
     print("Scrawly installer\n=================")
     _ensure_modern_python()
     _need("git", "Install git (https://git-scm.com). It powers Scrawly's automatic updates.")
