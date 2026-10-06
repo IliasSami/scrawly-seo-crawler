@@ -23,9 +23,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SCRAWLY_REPO: ${{ github.workspace }}
-      SCRAWLY_HOME: ${{ runner.temp }}/scrawly
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install folder
+        shell: bash
+        run: echo "SCRAWLY_HOME=$RUNNER_TEMP/scrawly" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v5
         with:
