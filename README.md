@@ -2,6 +2,8 @@
   <img src="assets/icons/scrawly.png" width="112" height="112" alt="Scrawly logo">
 </p>
 
+<!-- mcp-name: io.github.IliasSami/scrawly -->
+
 <h1 align="center">Scrawly: the free, open-source SEO crawler and site audit tool</h1>
 
 <p align="center">
@@ -26,6 +28,16 @@ for the SEO community under the MIT License.
 > **In one sentence:** Scrawly is a free desktop app that audits any website for the
 > technical issues that affect Google rankings and AI-search visibility (ChatGPT,
 > Perplexity, Google AI Overviews), with no account and no page limit.
+
+<p align="center">
+  <img src="site/images/scrawly-free-seo-crawler-built-for-google-and-ai-search-hero.png" width="900" alt="Scrawly: Free Desktop SEO Crawler Built for Modern Search">
+</p>
+
+**Official Portals & Network:**
+- 🌐 **Official Website:** [iliassami.com/scrawly](https://iliassami.com/scrawly)
+- ☁️ **Google Sites Hub:** [sites.google.com/view/scrawly-seo-crawler/home](https://sites.google.com/view/scrawly-seo-crawler/home)
+- ⚡ **Cloudflare Edge Node:** [iliassami-seo-cloudstack.pages.dev/scrawly-desktop-seo-crawler](https://iliassami-seo-cloudstack.pages.dev/scrawly-desktop-seo-crawler)
+- 📦 **GitHub Pages:** [iliassami.github.io/scrawly-seo-crawler](https://iliassami.github.io/scrawly-seo-crawler/)
 
 ---
 
@@ -98,6 +110,10 @@ how to fix it, and the exact pages affected.
 The full catalogue, with severity and fix tier for every check, is in
 [docs/CHECK_MANIFEST.yaml](docs/CHECK_MANIFEST.yaml).
 
+<p align="center">
+  <img src="site/images/scrawly-250-technical-seo-checks-impact-matrix.png" width="900" alt="Scrawly 250+ Technical SEO Checks Impact Matrix">
+</p>
+
 **Also included:** JavaScript rendering, custom extraction, saved crawl profiles, a 3D site
 graph and depth tree, crawl-to-crawl comparison, scheduled audits with regression alerts,
 Google Search Console and GA4 data, branded HTML and PDF reports, an AI writer for titles
@@ -118,6 +134,10 @@ option for people who want a deep technical audit without a licence, plus checks
 | Fixes | Report only | **Safe, reversible fixes on WordPress** |
 | Source code | Closed | **Open: read, audit, contribute** |
 
+<p align="center">
+  <img src="site/images/scrawly-vs-screaming-frog-feature-comparison-table.png" width="900" alt="Scrawly vs Screaming Frog vs Sitebulb Feature Comparison">
+</p>
+
 Scrawly is independent and not affiliated with Screaming Frog Ltd or Sitebulb.
 
 ## GEO and AEO: auditing for AI search
@@ -134,6 +154,21 @@ Optimization (AEO)**:
   from the page's own content.
 - **Entities and structured data:** the schema and named entities that help search engines
   and AI understand what a page is about.
+
+<p align="center">
+  <img src="site/images/scrawly-geo-aeo-ai-crawlers-chatgpt-perplexity-audit.png" width="900" alt="Scrawly Generative Engine Optimization (GEO) & AI Crawlers Audit">
+</p>
+
+## Four-Step Agency Audit Workflow
+
+<p align="center">
+  <img src="site/images/scrawly-four-step-client-ready-audit-report-workflow.png" width="900" alt="Scrawly 4-Step Agency Audit Workflow">
+</p>
+
+1. **Target URL Input:** Configure depth, concurrency, user-agents, and custom robots rules.
+2. **Automated Heuristic Scan:** Dual-pass HTTP inspection and headless Chromium JavaScript rendering.
+3. **Interactive Visual Dashboard:** Prioritized issue triaging by impact score and crawl depth.
+4. **Client-Ready Deliverables:** Instant export to white-label PDF, Excel/CSV, and portable SQLite databases.
 
 ## Fix WordPress issues safely
 

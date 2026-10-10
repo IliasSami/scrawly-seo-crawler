@@ -146,9 +146,31 @@ td strong { color: var(--text); }
 details { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 14px 16px; margin-bottom: 10px; }
 summary { cursor: pointer; font-weight: 600; }
-details p { margin: 10px 0 0; color: var(--muted); }
 footer { padding: 32px 0 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 15px; }
 footer p { margin: 6px 0; }
+.graphic-card {
+  margin: 28px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.graphic-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-bottom: 1px solid var(--border);
+}
+.graphic-card figcaption {
+  padding: 12px 18px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.graphic-card figcaption strong {
+  color: var(--accent);
+}
 @media (max-width: 640px) {
   nav.top { display: none; }
   .cmd { flex-direction: column; align-items: stretch; }
@@ -184,13 +206,25 @@ footer p { margin: 6px 0; }
         </div>
         <p class="note" id="where">Paste into <b>Terminal</b>. Scrawly installs itself and appears in your Applications.</p>
       </div>
+
+      <figure class="graphic-card">
+        <img src="images/scrawly-free-seo-crawler-built-for-google-and-ai-search-hero.png" alt="Scrawly: Free Open-Source Desktop SEO Crawler Built for Modern Search" width="1200" height="630">
+        <figcaption><strong>Figure 1: Core Architecture</strong> &mdash; Modern desktop crawler engine built for Googlebot, ChatGPT, Claude, and Perplexity.</figcaption>
+      </figure>
+
       <p class="cta">Or <a href="https://github.com/IliasSami/scrawly-seo-crawler#install-in-one-line">install by hand</a>
-        · MIT licensed · macOS, Windows, Linux</p>
+        · MIT licensed · macOS, Windows, Linux · Official Portal: <a href="https://iliassami.com/scrawly">iliassami.com/scrawly</a></p>
     </div>
 
     <section id="checks" aria-labelledby="h-checks">
       <h2 id="h-checks">250 checks on every page</h2>
       <p class="sub">Each finding explains why it matters, how to fix it, and exactly which pages are affected.</p>
+
+      <figure class="graphic-card">
+        <img src="images/scrawly-250-technical-seo-checks-impact-matrix.png" alt="Scrawly 250+ Technical SEO Checks Impact Matrix" width="1200" height="630" loading="lazy">
+        <figcaption><strong>Figure 2: 250+ Heuristic Matrix</strong> &mdash; Full spectrum technical SEO heuristics across crawlability, indexability, schema, and Core Web Vitals.</figcaption>
+      </figure>
+
       <div class="grid">
         <div class="card"><h3>Crawlability and indexing</h3><p>robots.txt, meta robots, X-Robots-Tag, noindex conflicts, orphan pages, crawl depth.</p></div>
         <div class="card"><h3>Redirects and errors</h3><p>4xx and 5xx pages, redirect chains and loops, temporary vs permanent redirects.</p></div>
@@ -206,6 +240,12 @@ footer p { margin: 6px 0; }
     <section id="geo" aria-labelledby="h-geo">
       <h2 id="h-geo">Built for AI search: GEO and AEO</h2>
       <p class="sub">AI answer engines read your pages and decide whether to cite you. Scrawly checks what they see.</p>
+
+      <figure class="graphic-card">
+        <img src="images/scrawly-geo-aeo-ai-crawlers-chatgpt-perplexity-audit.png" alt="Scrawly Generative Engine Optimization (GEO) & AI Crawlers Audit" width="1200" height="630" loading="lazy">
+        <figcaption><strong>Figure 3: AI Search & GEO Diagnostics</strong> &mdash; Automated auditing for GPTBot, ClaudeBot, PerplexityBot, and /llms.txt.</figcaption>
+      </figure>
+
       <div class="grid">
         <div class="card"><h3>AI crawler access</h3><p>Which AI bots (GPTBot, ClaudeBot, PerplexityBot, Google-Extended and more) you allow or block.</p></div>
         <div class="card"><h3>llms.txt</h3><p>Whether you publish a curated index for AI systems, and how good it is.</p></div>
@@ -217,6 +257,12 @@ footer p { margin: 6px 0; }
     <section id="compare" aria-labelledby="h-compare">
       <h2 id="h-compare">A free alternative to Screaming Frog and Sitebulb</h2>
       <p class="sub">Both are excellent tools. Scrawly is the free, open-source option, with checks for AI search.</p>
+
+      <figure class="graphic-card">
+        <img src="images/scrawly-vs-screaming-frog-feature-comparison-table.png" alt="Scrawly vs Screaming Frog Feature Comparison" width="1200" height="630" loading="lazy">
+        <figcaption><strong>Figure 4: Feature Matrix</strong> &mdash; 100% Free MIT License, Unlimited URLs, and Native MCP Server vs £209/yr legacy tools.</figcaption>
+      </figure>
+
       <div class="table-wrap">
         <table>
           <thead><tr><th></th><th>Screaming Frog / Sitebulb</th><th>Scrawly</th></tr></thead>
@@ -231,6 +277,15 @@ footer p { margin: 6px 0; }
         </table>
       </div>
       <p class="sub" style="margin-top:12px;font-size:14px">Scrawly is independent and not affiliated with Screaming Frog Ltd or Sitebulb.</p>
+    </section>
+
+    <section id="workflow" aria-labelledby="h-workflow">
+      <h2 id="h-workflow">Four-step agency audit workflow</h2>
+      <p class="sub">From single-URL scan to interactive visual dashboards and one-click white-label PDF/SQLite deliverables.</p>
+      <figure class="graphic-card">
+        <img src="images/scrawly-four-step-client-ready-audit-report-workflow.png" alt="Scrawly 4-Step Agency Audit Workflow" width="1200" height="630" loading="lazy">
+        <figcaption><strong>Figure 5: Agency Workflow</strong> &mdash; 1. Enter Target URL &rarr; 2. Automated Heuristic Scan &rarr; 3. Visual Dashboard &rarr; 4. Client Deliverable Export.</figcaption>
+      </figure>
     </section>
 
     <section id="privacy" aria-labelledby="h-privacy">
