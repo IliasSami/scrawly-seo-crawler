@@ -46,6 +46,29 @@ def _app_data_dir() -> Path:
     return base
 
 
+def _route_output_to_log(log_path: Path, streams: tuple[Any, ...] = ()) -> None:
+    """Point non-terminal stdout/stderr at a log file, at the fd level.
+
+    Launched from a shell that later exits, stdout is a pipe nobody reads; the
+    first log line of an audit then raised BrokenPipeError and failed the whole
+    audit. dup2 also covers the Playwright/uvicorn subprocess output.
+    """
+    streams = streams or (sys.stdout, sys.stderr)
+    log_fd = None
+    for stream in streams:
+        if stream is None or stream.isatty():
+            continue
+        if log_fd is None:
+            log_fd = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            stream.flush()
+        except OSError:
+            pass  # the old pipe is already dead; its buffer is lost either way
+        os.dup2(log_fd, stream.fileno())
+    if log_fd is not None:
+        os.close(log_fd)
+
+
 def _free_port() -> int:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -246,6 +269,7 @@ def main() -> None:
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parents[2] / ".env")
     edition.apply_desktop_defaults()
+    _route_output_to_log(_app_data_dir() / "scrawly.log")
 
     # 1) Self-update from the git checkout (best effort) so installs stay current.
     if os.environ.get("SCRAWLY_AUTO_UPDATE", "1").lower() not in ("0", "false", "off", "no"):

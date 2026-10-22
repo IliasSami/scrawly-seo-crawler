@@ -1347,6 +1347,11 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
         active_tasks[crawl_id].update(status="Complete", progress=100, phase="complete")
     except Exception as e:
         active_tasks[crawl_id] = {"status": f"Failed: {str(e)}", "progress": 0, "phase": "failed"}
+        try:
+            # active_tasks lives in memory only; leave the cause where it survives.
+            log.exception("audit.failed", crawl_id=crawl_id)
+        except Exception:  # noqa: BLE001 (logging must never mask the failure)
+            pass
     finally:
         if db is not None:
             db.close()
