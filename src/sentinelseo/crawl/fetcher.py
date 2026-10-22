@@ -42,7 +42,9 @@ from .parser import compute_render_diff, parse_html
 def is_retryable_status(result: Optional[httpx.Response]) -> bool:
     if result is None:
         return True
-    return bool(result.status_code == 429 or result.status_code >= 500)
+    # 403 included: WAFs (Imunify360, ModSecurity) refuse a burst for a few
+    # seconds; a genuine 403 just costs two backed-off re-checks.
+    return bool(result.status_code in (403, 429) or result.status_code >= 500)
 
 
 def _last_result(retry_state: Any) -> Optional[httpx.Response]:
