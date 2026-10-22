@@ -1,5 +1,6 @@
 from typing import Optional
 
+from sentinelseo.checks._util import jsonld_types
 from sentinelseo.checks.registry import CheckSpec, CrawlContext, Finding, register
 
 
@@ -341,11 +342,7 @@ def check_R09(ctx: CrawlContext) -> Optional[Finding]:
     )
 )
 def check_R10(ctx: CrawlContext) -> Optional[Finding]:
-    schemas = (
-        [s.get("type", "").lower() for s in ctx.structured_data]
-        if ctx.structured_data
-        else []
-    )
+    schemas = jsonld_types(ctx.structured_data)
     if "organization" not in schemas and "website" not in schemas:
         return Finding(
             check_id="R10",
@@ -412,11 +409,7 @@ def check_R11(ctx: CrawlContext) -> Optional[Finding]:
     )
 )
 def check_R12(ctx: CrawlContext) -> Optional[Finding]:
-    schemas = (
-        [s.get("type", "").lower() for s in ctx.structured_data]
-        if ctx.structured_data
-        else []
-    )
+    schemas = jsonld_types(ctx.structured_data)
     facts = {"faqpage", "product", "price"}
 
     if not any(f in schemas for f in facts):
