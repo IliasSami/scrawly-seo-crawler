@@ -215,3 +215,35 @@ def test_page_like_content_types() -> None:
     assert not F.is_page_like("image/png")
     assert not F.is_page_like("application/zip")
     assert not F.is_page_like("video/mp4")
+
+
+def test_transient_waf_403_is_retried() -> None:
+    """WAF-fronted hosts (Imunify360, ModSecurity) answer 403 for a few seconds
+    after a crawl burst; the page itself is fine. A single 403 must not be
+    recorded as a broken page."""
+    calls = {"n": 0}
+
+    async def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\n")
+        if req.url.path == "/":
+            return _page("Home", '<a href="/products/">p</a>')
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(403, text="<html><title>403 Forbidden</title></html>")
+        return _page("Products")
+
+    urls, _ = _run(handler, "http://example.test/")
+    assert _addresses(urls)["http://example.test/products/"] == 200
+
+
+def test_persistent_403_is_still_reported() -> None:
+    async def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\n")
+        if req.url.path == "/":
+            return _page("Home", '<a href="/members/">m</a>')
+        return httpx.Response(403, text="<html><title>403 Forbidden</title></html>")
+
+    urls, _ = _run(handler, "http://example.test/")
+    assert _addresses(urls)["http://example.test/members/"] == 403

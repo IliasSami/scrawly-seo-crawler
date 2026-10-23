@@ -26,6 +26,7 @@ from .models import Category, ProbeResult, ProbeStatus, Step
 MAX_BODY = 4096
 EXCERPT = 900
 DEFAULT_TIMEOUT = 8.0
+RETRY_DELAY_S = 1.5
 
 # Header allow-list for the audit trail. Recording every header would leak
 # Set-Cookie and auth material into stored reports (invariant I5).
@@ -76,6 +77,8 @@ class ProbeContext:
         self._home_lock = asyncio.Lock()
 
     def url(self, path: str) -> str:
+        if path.startswith(("http://", "https://")):
+            return path
         return f"{self.origin}/{path.lstrip('/')}"
 
     async def get(
@@ -84,13 +87,19 @@ class ProbeContext:
         h = {"User-Agent": self.user_agent}
         if headers:
             h.update(headers)
-        try:
-            return await asyncio.wait_for(
-                self.client.get(self.url(path), headers=h, follow_redirects=True),
-                timeout=self.timeout,
-            )
-        except Exception:
-            return None
+        # WAF-fronted origins (Imunify360, ModSecurity) drop connections for a
+        # moment right after a crawl burst; one delayed retry separates that
+        # from a genuinely unreachable origin.
+        for attempt in range(2):
+            try:
+                return await asyncio.wait_for(
+                    self.client.get(self.url(path), headers=h, follow_redirects=True),
+                    timeout=self.timeout,
+                )
+            except Exception:
+                if attempt == 0:
+                    await asyncio.sleep(RETRY_DELAY_S)
+        return None
 
     async def robots(self) -> Tuple[Optional[httpx.Response], str]:
         """Fetch /robots.txt once per run (concurrency-safe)."""
@@ -261,7 +270,10 @@ async def probe_robots_txt(ctx: ProbeContext) -> ProbeResult:
     r, body = await ctx.robots()
     steps = [_step("GET /robots.txt", r, "Fetched robots.txt" if r else "Request failed",
                    bool(r and r.status_code == 200))]
-    if r is None or r.status_code != 200:
+    if r is None:
+        return _unreachable(pid, title, Category.DISCOVERABILITY, goal, steps, specs,
+                            "Re-run once the origin responds.")
+    if r.status_code != 200:
         return _bad(pid, title, Category.DISCOVERABILITY, goal,
                     "No robots.txt found", steps, specs,
                     "Serve a /robots.txt at the origin root with at least a "
@@ -290,18 +302,14 @@ async def probe_sitemap(ctx: ProbeContext) -> ProbeResult:
                   detail=f"Found {len(declared)} Sitemap directive(s) in robots.txt",
                   ok=bool(declared))]
     candidates = declared or [ctx.url("/sitemap.xml")]
+    reached = False
     for sm in candidates[:3]:
-        path = sm if sm.startswith("http") else ctx.url(sm)
-        try:
-            r = await asyncio.wait_for(
-                ctx.client.get(path, headers={"User-Agent": ctx.user_agent},
-                               follow_redirects=True),
-                timeout=ctx.timeout)
-        except Exception:
-            r = None
+        path = ctx.url(sm)
+        r = await ctx.get(path)
         if r is None:
             steps.append(Step(action=f"GET {path}", detail="Request failed", ok=False))
             continue
+        reached = True
         text = (r.text or "")[:MAX_BODY]
         valid = r.status_code == 200 and ("<urlset" in text or "<sitemapindex" in text)
         steps.append(_step(f"GET {path}", r,
@@ -314,6 +322,9 @@ async def probe_sitemap(ctx: ProbeContext) -> ProbeResult:
                        "sitemap.xml exists with valid structure", steps, specs,
                        {"sitemap": path, "type": kind,
                         "declared_in_robots": bool(declared)})
+    if not reached:
+        return _unreachable(pid, title, Category.DISCOVERABILITY, goal, steps, specs,
+                            "Re-run once the origin responds.")
     return _bad(pid, title, Category.DISCOVERABILITY, goal,
                 "No valid sitemap found", steps, specs,
                 "Publish an XML sitemap (urlset or sitemapindex) and reference it "
@@ -436,7 +447,11 @@ async def probe_llms_txt(ctx: ProbeContext) -> ProbeResult:
     goal = "Publish /llms.txt as a curated map of your content for LLMs"
     specs = ["https://llmstxt.org/"]
     r = await ctx.get("/llms.txt")
-    if r is None or r.status_code != 200:
+    if r is None:
+        return _unreachable(pid, title, Category.CONTENT, goal,
+                            [Step("GET /llms.txt", "Request failed", ok=False)], specs,
+                            "Re-run once the origin responds.")
+    if r.status_code != 200:
         return _bad(pid, title, Category.CONTENT, goal, "No llms.txt found",
                     [_step("GET /llms.txt", r, "Not found", False, body=False)], specs,
                     "Add `/llms.txt`: an H1 with the site name, a blockquote summary, "
@@ -468,6 +483,9 @@ async def probe_ai_bot_rules(ctx: ProbeContext) -> ProbeResult:
     specs = ["https://www.rfc-editor.org/rfc/rfc9309.html"]
     r, body = await ctx.robots()
     steps = [_step("GET /robots.txt", r, "Fetched robots.txt", bool(body), body=False)]
+    if r is None:
+        return _unreachable(pid, title, Category.BOT_CONTROL, goal, steps, specs,
+                            "Re-run once the origin responds.")
     if not body:
         return _bad(pid, title, Category.BOT_CONTROL, goal,
                     "No robots.txt to declare AI bot rules in", steps, specs,
@@ -498,6 +516,9 @@ async def probe_content_signals(ctx: ProbeContext) -> ProbeResult:
     specs = ["https://contentsignals.org/"]
     r, body = await ctx.robots()
     steps = [_step("GET /robots.txt", r, "Fetched robots.txt", bool(body), body=False)]
+    if r is None:
+        return _unreachable(pid, title, Category.BOT_CONTROL, goal, steps, specs,
+                            "Re-run once the origin responds.")
     sigs = re.findall(r"(?mi)^\s*content-signal\s*:\s*(.+)$", body)
     parsed: Dict[str, str] = {}
     for line in sigs:

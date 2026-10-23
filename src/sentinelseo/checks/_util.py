@@ -52,3 +52,27 @@ def is_absolute(raw: str | None) -> bool:
 WORD_RE = re.compile(r"\b\w[\w'-]*\b", re.UNICODE)
 def word_count(text: str) -> int:
     return len(WORD_RE.findall(text or ""))
+
+def jsonld_types(blocks: "list[object] | None") -> list[str]:
+    """Lowercased schema types across JSON-LD blocks as the parser stores them.
+
+    A script may hold a top-level array, SEO plugins wrap entities in `@graph`,
+    and `@type` may itself be a list. Plain `type` is accepted for legacy rows.
+    """
+    out: list[str] = []
+    stack = list(blocks or [])
+    while stack:
+        b = stack.pop(0)
+        if isinstance(b, list):
+            stack[:0] = b
+            continue
+        if not isinstance(b, dict):
+            continue
+        graph = b.get("@graph")
+        if isinstance(graph, list):
+            stack[:0] = graph
+        raw = b.get("@type", b.get("type"))
+        for t in raw if isinstance(raw, list) else [raw]:
+            if t:
+                out.append(str(t).lower())
+    return out

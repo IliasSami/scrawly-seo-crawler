@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import urlparse
 
+from sentinelseo.checks._util import jsonld_types
 from sentinelseo.checks.registry import CheckSpec, CrawlContext, Finding, register
 
 # -- Helper logic to map CrawlContext to the detection logic concepts --
@@ -379,10 +380,10 @@ def check_F10(ctx: CrawlContext) -> Optional[Finding]:
 )
 def check_F11(ctx: CrawlContext) -> Optional[Finding]:
     jsonld = [
-        sd if isinstance(sd, dict) else getattr(sd, "__dict__", {})
+        sd if isinstance(sd, (dict, list)) else getattr(sd, "__dict__", {})
         for sd in (getattr(ctx, "structured_data", None) or [])
     ]
-    has_bc = any(isinstance(b, dict) and 'BreadcrumbList' in str(b.get("type", "")) for b in jsonld) or bool(re.search(r'(class|aria-label)=["\'][^"\']*breadcrumb', ctx.rendered_html or ctx.raw_html or "", re.I))  # noqa: E501
+    has_bc = "breadcrumblist" in jsonld_types(jsonld) or bool(re.search(r'(class|aria-label)=["\'][^"\']*breadcrumb', ctx.rendered_html or ctx.raw_html or "", re.I))  # noqa: E501
     depth = (getattr(ctx.url_row, "depth", None) or 0) if ctx.url_row else 0
     if not has_bc and depth >= 2:
         return Finding(
