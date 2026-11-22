@@ -16,6 +16,24 @@ The core tables are represented as SQLAlchemy models. They are outlined conceptu
 - `Fix`: `issue_id`, `check_id`, `tier`, `applied_at`, `before_state` (json), `after_state` (json), `applied_by`, `reverted` (bool).
 - `Enrichment`: `url_id`, `gsc_impressions`, `gsc_clicks`, `lcp`, `inp`, `cls`, `lighthouse_scores` (json), `agentic_pass_ratio`.
 
+### Interrupted crawl recovery
+
+An unfinished crawl stores the known URL queue and the inputs needed to finish
+its checks in SQLite. Each processed URL and the links newly discovered from
+it are committed together. Page metadata is available in Site Explorer before
+site-wide checks and enrichment finish.
+
+After a restart, the user can explicitly resume the same audit. Discovered is
+the count of known queue entries and can grow during the crawl. Processed
+includes skipped or failed entries, while saved pages are the rows visible in
+Site Explorer. Previously completed pages keep their results. A request that
+had not been committed at interruption can run again.
+
+Recovery data may contain original and rendered HTML even when report HTML
+storage is disabled. These local checkpoints are removed when the audit
+completes or is deleted. Existing report storage settings still apply to the
+finished report. Audits created before this feature lack a recovery queue.
+
 ## 2. Audit Rule Engine Contracts
 
 ### Finding

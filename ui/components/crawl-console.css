@@ -132,14 +132,16 @@
   animation: cc-spin 0.7s linear infinite;
 }
 
-.cc-done { text-align: center; padding: 16px 14px 18px; border-top: 1px solid var(--border-color); }
+.cc-done { text-align: center; padding: 16px 14px 0; border-top: 1px solid var(--border-color); }
 .cc-done.hidden { display: none; }
 .cc-done-check {
   width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 50%;
   background: rgba(34,197,94,0.14); color: var(--color-passed);
   display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700;
 }
-.cc-done-text { font-weight: 600; margin-bottom: 10px; }
+.cc-done-text { font-weight: 600; }
+.cc-actions { display: flex; justify-content: center; gap: 8px; padding: 12px 14px; }
+.cc-actions[hidden] { display: none; }
 
 @keyframes cc-spin { to { transform: rotate(360deg); } }
 @keyframes cc-pulse { 0% { opacity: 1; } 50% { opacity: 0.35; } 100% { opacity: 1; } }

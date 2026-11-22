@@ -19,12 +19,35 @@
       })();
     </script>
     <!-- Design tokens FIRST - every other stylesheet consumes them. -->
-    <script type="module" crossorigin src="/assets/index-BSLXB0z2.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BwMIQ9pP.css">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script type="module" crossorigin src="/assets/index-B9dAg6ph.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BLNkQjw5.css">
   </head>
   <body>
     <div class="app-container">
-      
+
       <!-- Global Left Nav -->
       <nav class="global-nav">
         <!-- Brand logomark - a crawler hopping node→node (a scrawled "S" path).
@@ -60,7 +83,7 @@
 
       <!-- Main Project Area -->
       <div class="project-view">
-        
+
         <!-- Top bar: context (left) · view tabs (center) · global actions (right) -->
         <nav class="project-nav">
           <div class="pn-context">
@@ -81,7 +104,7 @@
         </nav>
 
         <main class="main-content">
-          
+
           <!-- PUBLIC AUDIT WINDOW (anonymous, URL-only, read-only) -->
           <section id="view-public" class="view-section">
             <div id="public-audit-container"></div>
@@ -192,6 +215,10 @@
             <div class="explorer">
               <aside class="explorer-rail" id="explorer-rail"></aside>
               <div class="explorer-main">
+                <div id="explorer-crawl-status" hidden>
+                  <span role="status"></span>
+                  <button class="btn btn-primary" type="button" hidden>Resume audit</button>
+                </div>
                 <div class="explorer-tabs" id="explorer-tabs"></div>
                 <div class="explorer-filterbar" id="explorer-filters"></div>
                 <div id="grid-container" style="flex: 1; overflow: hidden; position: relative;"></div>
@@ -227,7 +254,7 @@
               <div id="site-graph" style="flex: 1; display: flex; flex-direction: column; min-height: 0;"></div>
             </div>
           </section>
-          
+
           <!-- COMPARE -->
           <section id="view-compare" class="view-section">
             <div class="cmp-page">
@@ -252,7 +279,7 @@
               </div>
             </div>
           </section>
-          
+
           <!-- REPORTS -->
           <section id="view-reports" class="view-section">
             <div class="rpt-page">
@@ -441,6 +468,7 @@
            the chat assistant. No modal needed. -->
 
     </div>
-    
+
+
   </body>
 </html>

@@ -49,6 +49,24 @@ class Crawl(Base):
     # Origin-level Agentic Web readiness report (probes the site ROOT once, so
     # this is a single fixed-cost result per crawl rather than per-URL data).
     agentic_report: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
+    # Nullable for audits created before resumable crawls were introduced.
+    run_state: Mapped[Optional[str]] = mapped_column(String)
+    discovered_count: Mapped[Optional[int]] = mapped_column(Integer)
+    processed_count: Mapped[Optional[int]] = mapped_column(Integer)
+    completed_count: Mapped[Optional[int]] = mapped_column(Integer)
+    resolved_target: Mapped[Optional[str]] = mapped_column(String)
+    checkpoint_ai_access: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
+
+
+class CrawlCheckpoint(Base):
+    """Durable frontier. Unprocessed entries are safe to retry after a restart."""
+
+    __tablename__ = "crawl_checkpoint"
+    crawl_id: Mapped[int] = mapped_column(ForeignKey("crawl.id"), primary_key=True)
+    address: Mapped[str] = mapped_column(String, primary_key=True)
+    depth: Mapped[int] = mapped_column(Integer)
+    processed: Mapped[bool] = mapped_column(Boolean, default=False)
+    result: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
 
 
 class URL(Base):

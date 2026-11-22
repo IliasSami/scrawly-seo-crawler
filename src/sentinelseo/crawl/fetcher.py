@@ -1,6 +1,7 @@
 import asyncio
 import re
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Pattern, Set
 from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlsplit, urlunsplit
@@ -37,6 +38,9 @@ from .models import (
     URLRow,
 )
 from .parser import compute_render_diff, parse_html
+
+CrawlPage = tuple[URLRow, list[UrlRenderDiffRow], list[ImageRef], list[StructuredDataRow]]
+CrawlCheckpoint = Callable[[str | None, CrawlPage | None, list[tuple[str, int]]], None]
 
 
 def is_retryable_status(result: Optional[httpx.Response]) -> bool:
@@ -1103,14 +1107,29 @@ class Crawler:
             return raw_row, diffs, images, sds, raw_html, rendered_html, mobile_context, agentic_context  # noqa: E501
 
     async def crawl_site(  # noqa: C901
-        self, start_url: str
+        self,
+        start_url: str,
+        *,
+        checkpoint: CrawlCheckpoint | None = None,
+        pending: list[tuple[str, int]] | None = None,
+        completed: list[CrawlPage] | None = None,
+        visited: set[str] | None = None,
+        resolved_start_url: str | None = None,
+        visited_depths: dict[str, int] | None = None,
     ) -> tuple[
         List[URLRow], List[UrlRenderDiffRow], List[ImageRef], List[StructuredDataRow]
     ]:
-        all_urls: List[URLRow] = []
-        all_diffs: List[UrlRenderDiffRow] = []
-        all_images: List[ImageRef] = []
-        all_sds: List[StructuredDataRow] = []
+        """Crawl new work or a saved frontier. Checkpoints must commit synchronously.
+
+        The first checkpoint seeds the durable frontier. Every later checkpoint
+        closes one requested URL and adds its discoveries. Pending and in-flight
+        URLs remain in the durable frontier until that transaction commits.
+        """
+        restored = completed or []
+        all_urls = [page[0] for page in restored]
+        all_diffs = [diff for page in restored for diff in page[1]]
+        all_images = [image for page in restored for image in page[2]]
+        all_sds = [sd for page in restored for sd in page[3]]
         headers = {"User-Agent": self.user_agent, **self.custom_headers}
 
         playwright = None
@@ -1118,9 +1137,18 @@ class Crawler:
 
         start_url = normalize_url(to_ascii_url(start_url))
         # Host scope + start folder (e.g. /blog/ for /blog/index.html).
-        self._set_seed_scope(start_url)
+        self._set_seed_scope(resolved_start_url or start_url)
         queue: asyncio.Queue[tuple[str, int]] = asyncio.Queue()
-        if self.list_mode:
+        seeds: list[tuple[str, int]] = []
+        if pending is not None:
+            self.visited.update(visited or ())
+            self.visited.update(normalize_url(row.address) for row in all_urls)
+            self.visited.update(url for url, _depth in pending)
+            if resolved_start_url:
+                self.visited.add(resolved_start_url)
+            for url, depth in (visited_depths or {}).items():
+                self._count_enqueue(url, depth)
+        elif self.list_mode:
             # The list IS the crawl: seed every supplied URL at depth 0. Include/
             # exclude never applies to list input (SF) — an uploaded URL is
             # deliberate — but the numeric limits still guard the run.
@@ -1128,10 +1156,12 @@ class Crawler:
                 nu = normalize_url(lu)
                 if nu not in self.visited and self._url_allowed(nu):
                     self.visited.add(nu)
-                    queue.put_nowait((nu, 0))
+                    self._count_enqueue(nu, 0)
+                    seeds.append((nu, 0))
         else:
-            queue.put_nowait((start_url, 0))
             self.visited.add(start_url)
+            self._count_enqueue(start_url, 0)
+            seeds.append((start_url, 0))
 
         try:
             if self.render:
@@ -1159,33 +1189,40 @@ class Crawler:
             async with httpx.AsyncClient(
                 headers=headers, verify=False, max_redirects=self.max_redirects
             ) as client:
-                # Probe AI access matrix
-                await self.probe_ai_access(client, start_url)
+                if pending is None:
+                    await self.probe_ai_access(client, start_url)
 
-                # The address people type often redirects to another host
-                # (example.com -> www.example.com, http -> https). Scope the crawl
-                # to where the site actually lives, or it would stop at one page.
-                if not self.list_mode:
-                    start_url = await self._resolve_seed(client, start_url)
+                    # If the typed address redirects to a different host, discover
+                    # links under that host but keep the original request in the queue.
+                    if not self.list_mode:
+                        start_url = await self._resolve_seed(client, start_url)
 
-                # Robots.txt (SF Pattern G): respect = enforce; ignore = don't even
-                # fetch; ignore_but_report = fetch + record but don't enforce.
-                if self.robots_mode != "ignore":
-                    rp = await self._robots_for(client, start_url)
-                    seed_blocked = not rp.can_fetch(start_url, self.robots_user_agent)
-                    self.telemetry["robots_seed_blocked"] = seed_blocked
-                    if self._enforce_robots and seed_blocked:
-                        return [], [], [], []  # Disallowed by robots.txt
+                    if self.robots_mode != "ignore":
+                        rp = await self._robots_for(client, start_url)
+                        seed_blocked = not rp.can_fetch(start_url, self.robots_user_agent)
+                        self.telemetry["robots_seed_blocked"] = seed_blocked
+                        if self._enforce_robots and seed_blocked:
+                            if checkpoint:
+                                checkpoint(None, None, [])
+                            return [], [], [], []
 
-                # Seed the queue from the sitemap when requested (or required for
-                # sitemap-only crawls).
-                if (self.discover_sitemap or self.sitemap_only) and not self.list_mode:
-                    for su in (await self._discover_sitemap_urls(client, start_url))[: self.max_pages]:
-                        if (su not in self.visited and self._in_scope(su)
-                                and self._url_allowed(su)
-                                and await self._robots_allows(client, su)):
-                            self.visited.add(su)
-                            queue.put_nowait((su, 1))
+                    if (self.discover_sitemap or self.sitemap_only) and not self.list_mode:
+                        for su in (await self._discover_sitemap_urls(client, start_url))[:self.max_pages]:
+                            if (su not in self.visited and self._in_scope(su)
+                                    and self._url_allowed(su, 1)
+                                    and await self._robots_allows(client, su)):
+                                self.visited.add(su)
+                                self._count_enqueue(su, 1)
+                                seeds.append((su, 1))
+                    if checkpoint:
+                        checkpoint(None, None, seeds)
+                else:
+                    seeds = pending
+                for seed in seeds:
+                    queue.put_nowait(seed)
+                self.telemetry.update(
+                    crawled=len(all_urls), discovered=len(self.visited), queue=queue.qsize()
+                )
 
                 # Hard per-URL budget. Every individual await inside crawl_url is
                 # meant to be bounded, but a single unbounded one (a browser call
@@ -1199,7 +1236,8 @@ class Crawler:
                     + self.axe_timeout_s * 2 + 30.0,
                 )
 
-                stored: Set[str] = set()   # final addresses already recorded
+                stored = {normalize_url(row.address) for row in all_urls}
+                publish_lock = asyncio.Lock()
 
                 async def worker() -> None:
                     # Workers wait for work instead of exiting when the queue is
@@ -1208,95 +1246,74 @@ class Crawler:
                     # queued URL is done (queue.join below).
                     while True:
                         url, depth = await queue.get()
-                        if len(all_urls) >= self.max_pages:  # crawl-budget cap: drain
-                            queue.task_done()
-                            continue
-
                         # Show this URL as in-flight for the live "now crawling" view.
                         in_flight = self.telemetry.setdefault("active", [])
                         in_flight.append(url)
                         try:
-                            row, diffs, imgs, sds, raw, ren, mob_ctx, ag_ctx = await asyncio.wait_for(
-                                self.crawl_url(url, depth, client, browser),
-                                timeout=url_budget_s,
-                            )
-                            final_addr = normalize_url(row.address) if row else ""
-                            if row and final_addr in stored:
-                                row = None   # a redirect landed on a page we already have
-                            if row:
-                                stored.add(final_addr)
-                                self.visited.add(final_addr)
-                                row.mobile_context = mob_ctx
-                                row.agentic_context = ag_ctx
-                                row.html_render = ren
-                                all_urls.append(row)
-                                all_diffs.extend(diffs)
-                                all_images.extend(imgs)
-                                all_sds.extend(sds)
+                            result = None
+                            # A restored final address may itself be queued behind a
+                            # redirect alias. Its stored page still counts only once.
+                            if (len(all_urls) < self.max_pages and normalize_url(url) not in stored
+                                    and (pending is None or await self._robots_allows(client, url))):
+                                try:
+                                    result = await asyncio.wait_for(
+                                        self.crawl_url(url, depth, client, browser),
+                                        timeout=url_budget_s,
+                                    )
+                                except asyncio.TimeoutError:
+                                    self.timed_out_urls.append(url)
+                                    self.telemetry["timed_out"] = len(self.timed_out_urls)
+                                except Exception:
+                                    pass  # Keep existing per-page error isolation.
 
-                                # sitemap-only and list mode both check a fixed set of
-                                # URLs — neither discovers new ones from the page.
-                                _no_discovery = self.sitemap_only or self.list_mode
-                                links = [] if _no_discovery else list(row.internal_links)
-                                if not _no_discovery:
-                                    # Subdomains / first-party CDNs are "external" to
-                                    # the parser (different netloc) — pull the ones
-                                    # in-scope back in when those options are on.
-                                    if self.crawl_subdomains or self.cdns:
-                                        links += [e for e in (row.external_links or [])
-                                                  if self._in_site_scope(e)]
-                                    # SF default skips rel=nofollow links; follow only
-                                    # when forced. Build the nofollow set from the row.
-                                    if not self.follow_nofollow:
-                                        nofollow = {
-                                            lr.href for lr in (getattr(row, "links", []) or [])
-                                            if any(t in ("nofollow", "sponsored", "ugc") for t in (lr.rel or ()))
-                                        }
-                                        if nofollow:
-                                            links = [ln for ln in links if ln not in nofollow]
-                                if self.max_links_per_page:
-                                    links = links[: self.max_links_per_page]
-                                # hreflang / AMP / pagination targets follow the same
-                                # enqueue pipeline, but only when their gate is on.
-                                if not _no_discovery:
-                                    links = links + self._gated_link_targets(row)
-                                for link in links:
-                                    # normalize → SF URL-rewriting pipeline (remove
-                                    # params / regex replace / lowercase). Fragment
-                                    # kept only if the fragment-ID crawl option is on.
-                                    base = link if self.crawl_fragment_identifiers else normalize_url(link)
-                                    nlink = self._rewrite_url(base)
-                                    nd = depth + 1
-                                    if (nlink not in self.visited
-                                            and nd <= self.max_depth
-                                            and self._in_site_scope(nlink)
-                                            and self._in_scope(nlink)
-                                            and self._url_allowed(nlink, nd)
-                                            and await self._robots_allows(client, nlink)):
-                                        self.visited.add(nlink)
-                                        self._count_enqueue(nlink, nd)
-                                        queue.put_nowait((nlink, nd))
-                                self._record_progress(
-                                    url, depth, row, queue.qsize(), len(all_urls)
-                                )
-                        except asyncio.TimeoutError:
-                            # Surface stalls instead of swallowing them: a silently
-                            # dropped URL is indistinguishable from a crawled one,
-                            # which is what makes this class of bug hard to spot.
-                            self.timed_out_urls.append(url)
-                            self.telemetry["timed_out"] = len(self.timed_out_urls)
-                        except Exception:
-                            pass
+                            # Keep cap, deduplication and frontier publication in
+                            # the same order as durable writes. In-flight results
+                            # must not make another URL look already processed.
+                            async with publish_lock:
+                                page: CrawlPage | None = None
+                                discoveries: list[tuple[str, int]] = []
+                                if result is not None:
+                                    row, diffs, imgs, sds, _, ren, mob_ctx, ag_ctx = result
+                                    final_addr = normalize_url(row.address) if row else ""
+                                    if row and final_addr not in stored and len(all_urls) < self.max_pages:
+                                        self.visited.add(final_addr)
+                                        row.mobile_context = mob_ctx
+                                        row.agentic_context = ag_ctx
+                                        row.html_render = ren
+                                        page = (row, diffs, imgs, sds)
+                                        discoveries = await self._discover_links(client, row, depth)
+
+                                # Publish new queue entries only after their discovery
+                                # and the completed page have committed together.
+                                if checkpoint:
+                                    checkpoint(url, page, discoveries)
+                                for discovery in discoveries:
+                                    queue.put_nowait(discovery)
+                                if page:
+                                    saved_row, saved_diffs, saved_images, saved_sds = page
+                                    stored.add(normalize_url(saved_row.address))
+                                    all_urls.append(saved_row)
+                                    all_diffs.extend(saved_diffs)
+                                    all_images.extend(saved_images)
+                                    all_sds.extend(saved_sds)
+                                    self._record_progress(url, depth, saved_row, queue.qsize(), len(all_urls))
+                                else:
+                                    self.telemetry["queue"] = queue.qsize()
                         finally:
                             if url in in_flight:
                                 in_flight.remove(url)
                             queue.task_done()
 
                 workers = [asyncio.create_task(worker()) for _ in range(max(1, self.concurrency))]
-                await queue.join()
-                for w in workers:
-                    w.cancel()
-                await asyncio.gather(*workers, return_exceptions=True)
+                drained = asyncio.create_task(queue.join())
+                try:
+                    done, _ = await asyncio.wait([drained, *workers], return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        task.result()
+                finally:
+                    for task in (drained, *workers):
+                        task.cancel()
+                    await asyncio.gather(drained, *workers, return_exceptions=True)
 
                 # Final step: resolve external statuses — bounded, high-concurrency,
                 # hard-timeout so a site with many slow external hosts can't stall.
@@ -1333,3 +1350,38 @@ class Crawler:
                 await playwright.stop()
 
         return all_urls, all_diffs, all_images, all_sds
+
+    async def _discover_links(
+        self, client: httpx.AsyncClient, row: URLRow, depth: int,
+    ) -> list[tuple[str, int]]:
+        """Reserve unique, in-scope links for the current page's checkpoint."""
+        next_depth = depth + 1
+        if self.sitemap_only or self.list_mode or next_depth > self.max_depth:
+            return []
+        links = list(row.internal_links)
+        # CDNs and subdomains are external to the parser but may be in crawl scope.
+        if self.crawl_subdomains or self.cdns:
+            links.extend(link for link in row.external_links if self._in_site_scope(link))
+        if not self.follow_nofollow:
+            nofollow = {
+                link.href for link in row.links
+                if any(token in ("nofollow", "sponsored", "ugc") for token in link.rel)
+            }
+            links = [link for link in links if link not in nofollow]
+        if self.max_links_per_page:
+            links = links[:self.max_links_per_page]
+        discoveries: list[tuple[str, int]] = []
+        for link in links + self._gated_link_targets(row):
+            base = link if self.crawl_fragment_identifiers else normalize_url(link)
+            url = self._rewrite_url(base)
+            if (url in self.visited or not self._in_site_scope(url) or not self._in_scope(url)
+                    or not self._url_allowed(url, next_depth)):
+                continue
+            if not await self._robots_allows(client, url):
+                continue
+            # Robots lookup can yield to another worker that discovers the same URL.
+            if url not in self.visited and self._url_allowed(url, next_depth):
+                self.visited.add(url)
+                self._count_enqueue(url, next_depth)
+                discoveries.append((url, next_depth))
+        return discoveries

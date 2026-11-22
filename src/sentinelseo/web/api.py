@@ -13,6 +13,7 @@ load_dotenv()  # pick up .env (PSI key, GSC creds, WP fix credentials)
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
+from sqlalchemy.orm import Session
 
 from sentinelseo import edition
 from sentinelseo.audit.context import SiteContext
@@ -21,12 +22,14 @@ from sentinelseo.checks import load_all_checks
 from sentinelseo.checks.registry import CrawlContext
 from sentinelseo.checks.site_level.registry import get_site_level_checks
 from sentinelseo.crawl.fetcher import Crawler
+from sentinelseo.crawl.models import AIAccessMatrix, UrlRenderDiffRow, URLRow
 from sentinelseo.db.migrate import run_migrations
 from sentinelseo.db.models import (
     URL,
     Client,
     ConfigProfile,
     Crawl,
+    CrawlCheckpoint,
     Fix,
     Issue,
     Resource,
@@ -38,6 +41,7 @@ from sentinelseo.db.session import (
     set_current_owner,
 )
 from sentinelseo.web import crawl_gate
+from sentinelseo.web.crawl_checkpoint import CheckpointStore, PageResult
 
 app = FastAPI(title="Scrawly Execution Hub API")
 
@@ -313,7 +317,29 @@ def _seed_profiles() -> None:
 
 _seed_profiles()
 
-active_tasks: dict[int, dict[str, Any]] = {}
+active_tasks: dict[tuple[str, int], dict[str, Any]] = {}
+
+
+def _task_key(crawl_id: int) -> tuple[str, int]:
+    return current_owner(), crawl_id
+
+
+def _crawl_progress(crawl: Crawl) -> dict[str, Any]:
+    live = active_tasks.get(_task_key(crawl.id)) or {}
+    phase = live.get("phase")
+    if not phase:
+        phase = (
+            ("starting" if live else "interrupted") if crawl.run_state == "running"
+            else crawl.run_state or ("complete" if crawl.url_count else "legacy")
+        )
+    return {
+        "phase": phase,
+        "resumable": bool(crawl.target_url) and phase in ("interrupted", "failed"),
+        "discovered": crawl.discovered_count or 0,
+        "processed": crawl.processed_count or 0,
+        "crawled": crawl.completed_count if crawl.completed_count is not None else crawl.url_count,
+        "url_count": crawl.url_count or 0,
+    }
 
 def _client_public(c: Client) -> dict[str, Any]:
     """Serialize a Client for the UI. Never returns the raw connection key —
@@ -435,6 +461,9 @@ def delete_client(client_id: int) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Client not found")
     crawl_ids = [c.id for c in db.query(Crawl).filter(Crawl.client_id == client_id)]
     if crawl_ids:
+        if any(_crawl_in_progress(crawl_id) for crawl_id in crawl_ids):
+            db.close()
+            raise HTTPException(status_code=409, detail="An audit is still running")
         issue_ids = [
             i.id for i in db.query(Issue).filter(Issue.crawl_id.in_(crawl_ids))
         ]
@@ -451,6 +480,9 @@ def delete_client(client_id: int) -> dict[str, Any]:
         db.query(URL).filter(URL.crawl_id.in_(crawl_ids)).delete(
             synchronize_session=False
         )
+        db.query(CrawlCheckpoint).filter(CrawlCheckpoint.crawl_id.in_(crawl_ids)).delete(
+            synchronize_session=False
+        )
         db.query(Crawl).filter(Crawl.id.in_(crawl_ids)).delete(
             synchronize_session=False
         )
@@ -460,7 +492,14 @@ def delete_client(client_id: int) -> dict[str, Any]:
     return {"deleted": client_id, "crawls_removed": len(crawl_ids)}
 
 
+def _crawl_in_progress(crawl_id: int) -> bool:
+    task = active_tasks.get(_task_key(crawl_id))
+    return task is not None and task.get("phase") not in ("failed", "complete")
+
+
 def _purge_crawl(db: Any, crawl_id: int) -> dict[str, int]:
+    if _crawl_in_progress(crawl_id):
+        raise HTTPException(status_code=409, detail="This audit is still running")
     """Delete a crawl and everything it produced. The caller commits.
 
     Order matters — children before parents, since SQLite has no cascade here:
@@ -477,8 +516,9 @@ def _purge_crawl(db: Any, crawl_id: int) -> dict[str, int]:
         Resource.crawl_id == crawl_id).delete(synchronize_session=False)
     removed["urls"] = db.query(URL).filter(
         URL.crawl_id == crawl_id).delete(synchronize_session=False)
+    db.query(CrawlCheckpoint).filter_by(crawl_id=crawl_id).delete(synchronize_session=False)
     db.query(Crawl).filter(Crawl.id == crawl_id).delete(synchronize_session=False)
-    active_tasks.pop(crawl_id, None)
+    active_tasks.pop(_task_key(crawl_id), None)
     return removed
 
 
@@ -886,13 +926,82 @@ def _apply_extraction_gates(urls: list[Any], config: dict[str, Any]) -> None:
             u.rdfa_types = []
 
 
+def _hide_crawl_page(u: URLRow, config: dict[str, Any]) -> bool:
+    if config.get("respect_noindex") and "noindex" in (
+        (u.meta_robots or "") + " " + (u.x_robots or "")
+    ).lower():
+        return True
+    if config.get("respect_canonical") and u.canonical:
+        from sentinelseo.crawl.fetcher import normalize_url as _nz
+        if _nz(u.canonical) != _nz(u.address):
+            return True
+    return False
+
+
+def _crawl_page_values(
+    crawl_id: int, u: URLRow, config: dict[str, Any], render_diff: list[dict[str, Any]],
+) -> dict[str, Any]:
+    _store_headers = config.get("extract_http_headers", True)
+    _store_cookies = config.get("extract_cookies", False)
+    _store_html = config.get("store_html", False)
+    _store_rendered = config.get("store_rendered_html", False)
+    _store_structured = config.get("extract_structured_data", True)
+    return {
+        "crawl_id": crawl_id,
+        "address": u.address,
+        "status": u.status,
+        "redirect_chain": u.redirect_chain,
+        "title": u.title or "",
+        "meta_desc": u.meta_desc,
+        "canonical": u.canonical,
+        "meta_robots": u.meta_robots,
+        "x_robots": u.x_robots,
+        "word_count": u.word_count,
+        "readability": u.readability,
+        "text_to_code": u.text_to_code,
+        "forms_count": u.forms_count,
+        "microdata_types": u.microdata_types if _store_structured else [],
+        "rdfa_types": u.rdfa_types if _store_structured else [],
+        "last_modified": (u.headers or {}).get("last-modified"),
+        "prev_url": u.prev_url,
+        "next_url": u.next_url,
+        "amp_url": u.amp_url,
+        "mobile_alternate": u.mobile_alternate,
+        "cookies": _cookie_names((u.headers or {}).get("set-cookie")) if _store_cookies else [],
+        "content_hash": u.content_hash if config.get("store_hash", True) else "",
+        "near_dup_cluster": u.near_dup_cluster,
+        "ttfb": u.ttfb,
+        "size": u.size,
+        "inlink_count": u.inlink_count,
+        "outlink_count": u.outlink_count,
+        "indexable": u.indexable,
+        "indexability_reason": u.indexability_reason,
+        "depth": u.depth,
+        "lcp_s": u.lcp_s,
+        "cls": u.cls,
+        "inp_ms": u.inp_ms,
+        "render_diff": render_diff,
+        "internal_links": u.internal_links,
+        "h1": u.h1,
+        "h2": u.h2,
+        "images": [img.__dict__ for img in u.images],
+        "jsonld": u.jsonld if _store_structured else [],
+        "headers": u.headers if _store_headers else {},
+        "raw_html": (u.html_response or "") if _store_html else None,
+        "rendered_html": u.html_render if _store_rendered else None,
+        "pdf_properties": getattr(u, "pdf_properties", None) or None,
+        "segment": getattr(u, "segment", None),
+        "js_errors": (getattr(u, "js_errors", None) or None),
+    }
+
+
 async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
                    owner: str = "") -> None:
     # Bind this background crawl's DB writes to the owning workspace explicitly,
     # so every URL/issue/resource row lands in the same per-workspace database as
     # the crawl record — independent of any request context.
     set_current_owner(owner)
-    active_tasks[crawl_id] = {"status": "Starting Crawl...", "progress": 5}
+    active_tasks[_task_key(crawl_id)] = {"status": "Starting Crawl...", "progress": 5}
 
     js_render = config.get("js_render", True)
     concurrency = config.get("concurrency", 5)
@@ -964,7 +1073,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
             flatten_iframes=config.get("flatten_iframes", False),
         )
         import time as _time
-        active_tasks[crawl_id].update(
+        active_tasks[_task_key(crawl_id)].update(
             status="Crawling in progress...", progress=10, phase="crawl",
             crawled=0, discovered=1, queue=1, active=[], recent=[],
             status_tally={}, started_at=_time.time(), max_pages=max_pages,
@@ -972,10 +1081,33 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
         )
         # Point the crawler's telemetry sink at this task so per-URL progress
         # streams live to /api/audit/status.
-        crawler.telemetry = active_tasks[crawl_id]
+        crawler.telemetry = active_tasks[_task_key(crawl_id)]
 
-        urls, diffs, images, sds = await crawler.crawl_site(target_url)
-        active_tasks[crawl_id].update(phase="enrich", active=[])
+        def save_partial(session: Session, row: URLRow, row_diffs: list[UrlRenderDiffRow]) -> bool:
+            if _hide_crawl_page(row, config):
+                return False
+            values = _crawl_page_values(crawl_id, row, config, [d.__dict__ for d in row_diffs])
+            session.add(URL(**values))
+            return True
+
+        checkpoints = CheckpointStore(crawl_id, save_partial)
+        resolved_target, ai_access, depths, pending, completed = checkpoints.restore()
+        if ai_access is not None:
+            crawler.ai_access = AIAccessMatrix(matrix=ai_access)
+
+        def checkpoint(
+            requested: str | None, page: PageResult | None, discovered: list[tuple[str, int]],
+        ) -> None:
+            resolved = crawler.telemetry.get("seed_redirected_to") or target_url
+            matrix = crawler.ai_access.matrix if crawler.ai_access else None
+            checkpoints.record(requested, page, discovered, resolved, matrix)
+
+        urls, diffs, images, sds = await crawler.crawl_site(
+            target_url, checkpoint=checkpoint, pending=pending if resolved_target else None,
+            completed=completed, visited=set(depths), visited_depths=depths,
+            resolved_start_url=resolved_target,
+        )
+        active_tasks[_task_key(crawl_id)].update(phase="enrich", active=[])
 
         # Extraction-flag gates (SF Pattern B): applied to the in-memory rows so
         # BOTH the audit engine and the persisted data honor them. Disabling a flag
@@ -1011,7 +1143,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
         if config.get("psi_enrich") and os.environ.get("PAGESPEED_API_KEY"):
             from sentinelseo.enrichment.psi_lighthouse import PSILighthouseEnricher
             enricher = PSILighthouseEnricher()
-            active_tasks[crawl_id].update(status="PageSpeed enrichment...", progress=50)
+            active_tasks[_task_key(crawl_id)].update(status="PageSpeed enrichment...", progress=50)
             for u in [x for x in urls if x.status == 200][: config.get("psi_sample", 3)]:
                 m = await asyncio.to_thread(enricher.fetch_metrics, u.address)
                 if m.get("available"):
@@ -1044,7 +1176,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
                 # Surface a GA4 API failure (bad property id / permission / expired
                 # grant) instead of it looking like "no pages matched".
                 if isinstance(raw, dict) and raw.get("_error"):
-                    active_tasks[crawl_id]["ga4_error"] = str(raw["_error"])
+                    active_tasks[_task_key(crawl_id)]["ga4_error"] = str(raw["_error"])
                     return {}
                 return match_to_urls(
                     raw, [u.address for u in urls],
@@ -1075,7 +1207,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
                         # The backend is down or rate-limited (the free public API
                         # caps at ~20 req/min). Stop — don't hammer it once per URL
                         # and don't report a misspelled site as clean.
-                        active_tasks[crawl_id]["spelling_error"] = str(e)
+                        active_tasks[_task_key(crawl_id)]["spelling_error"] = str(e)
                         break
                     if hits:
                         out[u.address] = hits
@@ -1119,7 +1251,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
         for d in diffs:
             render_by_url.setdefault(d.url, []).append({"element": d.element, "state": d.state})
 
-        active_tasks[crawl_id].update(status="Storing Crawl Data...", progress=60, phase="store")
+        active_tasks[_task_key(crawl_id)].update(status="Storing Crawl Data...", progress=60, phase="store")
 
         # Custom extraction (site-wide scraper) — opt-in; only runs when the
         # profile defines extractors/searches, so the default crawl stays lean.
@@ -1138,7 +1270,6 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
 
         crawl_record = db.query(Crawl).filter(Crawl.id == crawl_id).first()
         if crawl_record:
-            crawl_record.url_count = len(urls)
             if embed_report:
                 crawl_record.embeddings_report = embed_report
             db.commit()
@@ -1148,7 +1279,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
         # so this is a fixed ~25 requests whether the crawl found 6 pages or
         # 100,000. Deliberately additive: a failure here must never fail the
         # audit, so the whole block degrades to "no agentic data".
-        active_tasks[crawl_id].update(
+        active_tasks[_task_key(crawl_id)].update(
             status="Checking agentic readiness...", progress=72, phase="agentic")
         try:
             from sentinelseo.agentic import run_agentic_audit
@@ -1176,86 +1307,32 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
         except Exception as exc:
             # Surface it rather than swallowing: a silently missing section is
             # indistinguishable from a site that simply scored zero.
-            active_tasks[crawl_id]["agentic_error"] = type(exc).__name__
+            active_tasks[_task_key(crawl_id)]["agentic_error"] = type(exc).__name__
 
-        # Storage gates (SF Pattern A "store" side / Pattern B).
-        _store_headers = config.get("extract_http_headers", True)
-        _store_cookies = config.get("extract_cookies", False)
-        _store_html = config.get("store_html", False)
-        _store_rendered = config.get("store_rendered_html", False)
-        # Respect noindex / canonical (SF Advanced): the page was still crawled and
-        # its links followed (the graph/authority above used it), but it's hidden
-        # from the stored results — so it never appears in the UI.
-        _respect_noindex = bool(config.get("respect_noindex"))
-        _respect_canonical = bool(config.get("respect_canonical"))
-
-        def _hidden(u: Any) -> bool:
-            if _respect_noindex and "noindex" in (
-                (u.meta_robots or "") + " " + (u.x_robots or "")
-            ).lower():
-                return True
-            if _respect_canonical and u.canonical:
-                from sentinelseo.crawl.fetcher import normalize_url as _nz
-                if _nz(u.canonical) != _nz(u.address):
-                    return True
-            return False
-
+        stored_pages = {entry.address: entry for entry in db.query(URL).filter_by(crawl_id=crawl_id)}
+        visible_count = 0
         for u in urls:
-            if _hidden(u):
+            if _hide_crawl_page(u, config):
                 continue
-            db.add(URL(
-                crawl_id=crawl_id,
-                address=u.address,
-                status=u.status,
-                redirect_chain=u.redirect_chain,
-                title=u.title or "",
-                meta_desc=u.meta_desc,
-                canonical=u.canonical,
-                meta_robots=u.meta_robots,
-                x_robots=u.x_robots,
-                word_count=u.word_count,
-                readability=u.readability,
-                text_to_code=u.text_to_code,
-                forms_count=u.forms_count,
-                microdata_types=u.microdata_types,
-                rdfa_types=u.rdfa_types,
-                last_modified=(u.headers or {}).get("last-modified"),
+            visible_count += 1
+            values = _crawl_page_values(crawl_id, u, config, render_by_url.get(u.address, []))
+            values.update(
                 custom_data=custom_by_url.get(u.address),
-                prev_url=u.prev_url,
-                next_url=u.next_url,
-                amp_url=u.amp_url,
-                mobile_alternate=u.mobile_alternate,
-                cookies=_cookie_names((u.headers or {}).get("set-cookie")) if _store_cookies else [],
                 pagerank=_pr_by_url.get(u.address),
-                content_hash=u.content_hash,
-                near_dup_cluster=u.near_dup_cluster,
-                ttfb=u.ttfb,
-                size=u.size,
-                inlink_count=u.inlink_count,
-                outlink_count=u.outlink_count,
-                indexable=u.indexable,
-                indexability_reason=u.indexability_reason,
-                depth=u.depth,
-                lcp_s=u.lcp_s,
-                cls=u.cls,
-                inp_ms=u.inp_ms,
                 gsc_impressions=(gsc_data.get(u.address) or {}).get("impressions"),
                 gsc_clicks=(gsc_data.get(u.address) or {}).get("clicks"),
-                render_diff=render_by_url.get(u.address, []),
-                internal_links=u.internal_links,
-                h1=u.h1,
-                h2=u.h2,
-                images=[img.__dict__ for img in u.images],
-                jsonld=u.jsonld,
-                headers=u.headers if _store_headers else {},
-                raw_html=(u.html_response or "") if _store_html else None,
-                rendered_html=u.html_render if _store_rendered else None,
-                pdf_properties=getattr(u, "pdf_properties", None) or None,
-                segment=getattr(u, "segment", None),
                 ga4=ga4_by_url.get(u.address) or None,
                 spelling=spelling_by_url.get(u.address) or None,
-                js_errors=(getattr(u, "js_errors", None) or None),
-            ))
+            )
+            existing = stored_pages.get(u.address)
+            if existing is None:
+                db.add(URL(**values))
+            else:
+                for field, value in values.items():
+                    setattr(existing, field, value)
+        if crawl_record is not None:
+            crawl_record.url_count = visible_count
+        db.query(Resource).filter_by(crawl_id=crawl_id).delete(synchronize_session=False)
         # Persist the swept sub-resources (CSS/JS/media) for the Resources view.
         for r in getattr(crawler, "resources", []) or []:
             db.add(Resource(
@@ -1265,7 +1342,7 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
             ))
         db.commit()
 
-        active_tasks[crawl_id].update(status="Running Audit Engine...", progress=80, phase="audit")
+        active_tasks[_task_key(crawl_id)].update(status="Running Audit Engine...", progress=80, phase="audit")
 
         robots_txt, probe, sitemap_files, llms = await _enrich_site(
             target_url, urls, crawler
@@ -1342,14 +1419,37 @@ async def do_audit(crawl_id: int, target_url: str, config: dict[str, Any],
                 why_it_matters=finding.why_it_matters,
                 recommended_fix=finding.recommended_fix,
             ))
+        if crawl_record is not None:
+            crawl_record.run_state = "complete"
+            crawl_record.checkpoint_ai_access = None
+        db.query(CrawlCheckpoint).filter_by(crawl_id=crawl_id).delete(synchronize_session=False)
         db.commit()
 
-        active_tasks[crawl_id].update(status="Complete", progress=100, phase="complete")
+        active_tasks[_task_key(crawl_id)].update(status="Complete", progress=100, phase="complete")
     except Exception as e:
-        active_tasks[crawl_id] = {"status": f"Failed: {str(e)}", "progress": 0, "phase": "failed"}
+        if db is not None:
+            db.rollback()
+        with SessionLocal() as failure_db:
+            failed = failure_db.get(Crawl, crawl_id)
+            if failed is not None:
+                failed.run_state = "failed"
+                failure_db.commit()
+        active_tasks[_task_key(crawl_id)] = {"status": f"Failed: {str(e)}", "progress": 0, "phase": "failed"}
     finally:
         if db is not None:
             db.close()
+
+
+async def _run_crawl_task(
+    crawl_id: int, target_url: str, config: dict[str, Any], owner: str,
+) -> None:
+    set_current_owner(owner)
+    try:
+        await do_audit(crawl_id, target_url, config, owner)
+    finally:
+        if _crawl_in_progress(crawl_id):
+            active_tasks.pop(_task_key(crawl_id), None)
+
 
 DEFAULT_CRAWL_SETTINGS: dict[str, Any] = {
     "user_agent": "ScrawlyBot/1.0",
@@ -1730,20 +1830,21 @@ async def start_public_audit(
     db = SessionLocal()
     public = _public_client(db)
     crawl_record = Crawl(
-        client_id=public.id, target_url=target, config=config,
+        client_id=public.id, target_url=target, config=config, run_state="running",
     )
     db.add(crawl_record)
-    db.commit()
-    db.refresh(crawl_record)
+    db.flush()
     crawl_id = crawl_record.id
     # Retention: the public window keeps only the latest audit. Drop older public
     # crawls now so the window always resolves to exactly this one.
-    _prune_public_crawls(db, keep_id=crawl_id)
-    db.commit()
-    db.close()
+    try:
+        _prune_public_crawls(db, keep_id=crawl_id)
+        db.commit()
+    finally:
+        db.close()
 
-    active_tasks[crawl_id] = {"status": "Starting...", "progress": 0}
-    background_tasks.add_task(do_audit, crawl_id, target, config, owner)
+    active_tasks[_task_key(crawl_id)] = {"status": "Starting...", "progress": 0}
+    background_tasks.add_task(_run_crawl_task, crawl_id, target, config, owner)
     return {
         "crawl_id": crawl_id,
         "url": target,
@@ -1789,15 +1890,13 @@ def public_latest() -> dict[str, Any]:
             host = urlparse(target).hostname or target
         except Exception:
             pass
-        task = active_tasks.get(crawl.id)
-        # "Ready" once it has produced pages; while a task is live and empty it's
-        # still crawling. A finished crawl has no live task entry.
-        running = bool(task) and (crawl.url_count or 0) == 0
+        progress = _crawl_progress(crawl)
+        running = progress["phase"] not in ("complete", "interrupted", "failed", "legacy")
         return {
             "crawl_id": crawl.id,
             "url": target,
             "host": host,
-            "url_count": crawl.url_count or 0,
+            **progress,
             "health_score": None if running else _crawl_health(db, crawl.id),
             "started_at": crawl.started_at.isoformat() if crawl.started_at else None,
             "running": running,
@@ -1933,22 +2032,54 @@ async def start_audit(data: dict[str, Any], background_tasks: BackgroundTasks,
     config["stack"] = str((client.detected_stack or {}).get("stack") or "")
     config["subcategory"] = str((client.detected_stack or {}).get("subcategory") or "")
 
-    crawl_record = Crawl(client_id=client.id, target_url=client.base_url, config=config)
+    crawl_record = Crawl(client_id=client.id, target_url=client.base_url, config=config, run_state="running")
     db.add(crawl_record)
     db.commit()
     db.refresh(crawl_record)
 
-    active_tasks[crawl_record.id] = {"status": "Starting...", "progress": 0}
-    background_tasks.add_task(do_audit, crawl_record.id, client.base_url,
+    active_tasks[_task_key(crawl_record.id)] = {"status": "Starting...", "progress": 0}
+    background_tasks.add_task(_run_crawl_task, crawl_record.id, client.base_url,
                              crawl_record.config, owner)
 
     db.close()
     return {"crawl_id": crawl_record.id, "message": "Audit started"}
 
+@app.post("/api/audit/resume/{crawl_id}")
+async def resume_audit(
+    crawl_id: int, background_tasks: BackgroundTasks, request: Request,
+) -> dict[str, Any]:
+    owner = _crawl_owner(_require_crawl_authz(request))
+    set_current_owner(owner)
+    with SessionLocal() as db:
+        crawl = db.get(Crawl, crawl_id)
+        if crawl is None:
+            raise HTTPException(status_code=404, detail="Audit not found")
+        if not _crawl_progress(crawl)["resumable"] or not crawl.target_url:
+            raise HTTPException(status_code=409, detail="This audit cannot be resumed")
+        target, config = crawl.target_url, crawl.config
+        crawl.run_state = "running"
+        db.commit()
+    active_tasks[_task_key(crawl_id)] = {"status": "Resuming...", "progress": 0, "phase": "starting"}
+    background_tasks.add_task(_run_crawl_task, crawl_id, target, config, owner)
+    return {"crawl_id": crawl_id, "message": "Audit resumed"}
+
+
 @app.get("/api/audit/status/{crawl_id}")
 def get_audit_status(crawl_id: int) -> dict[str, Any]:
     import time as _time
-    status = dict(active_tasks.get(crawl_id, {"status": "Unknown", "progress": 0}))
+    with SessionLocal() as db:
+        crawl = db.get(Crawl, crawl_id)
+        if crawl is None:
+            raise HTTPException(status_code=404, detail="Audit not found")
+        durable = _crawl_progress(crawl)
+    phase = durable["phase"]
+    labels = {"interrupted": "Interrupted", "complete": "Complete", "failed": "Failed"}
+    status: dict[str, Any] = {
+        "status": labels.get(phase, "Unknown"),
+        "progress": 100 if phase == "complete" else 0,
+    }
+    status.update(active_tasks.get(_task_key(crawl_id), {}))
+    status.update(durable)
     # Snapshot mutable telemetry (mutated by the crawl worker on another thread)
     # into private copies so JSON serialization can't race with a live crawl.
     for _k, _v in list(status.items()):
@@ -1982,7 +2113,7 @@ def get_crawls(include_public: bool = False) -> list[dict[str, Any]]:
             "target_url": c.target_url or "",
             "public": is_public,
             "started_at": c.started_at,
-            "url_count": c.url_count,
+            **_crawl_progress(c),
         })
     db.close()
     return res
