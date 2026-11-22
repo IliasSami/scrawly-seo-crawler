@@ -195,7 +195,6 @@
 }
 .pa-latest-clickable { cursor: pointer; transition: border-color .12s, background .12s; }
 .pa-latest-clickable:hover { border-color: color-mix(in srgb, var(--color-notice) 45%, var(--border-color)); }
-.pa-latest-clickable:focus-visible { outline: 2px solid var(--color-notice); outline-offset: 2px; }
 .pa-latest-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .pa-latest-body b { color: var(--text-primary); font-size: 14px; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -215,5 +214,5 @@
   .pa-form { flex-direction: column; }
   .pa-opts { grid-template-columns: 1fr; }
   .pa-latest-card { flex-wrap: wrap; }
-  .pa-latest-open { width: 100%; order: 3; }
+  .pa-latest-open, .pa-latest-resume { width: 100%; order: 3; }
 }

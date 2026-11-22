@@ -1,13 +1,13 @@
 import '@fontsource-variable/inter';
 import * as d3 from 'd3';
 import { createThemeToggle, initTheme } from './theme.js';
-import { startApp, ownerKey, onCrawlFinished } from './edition.js';
+import { startApp, ownerKey, authorizeCrawl, onCrawlFinished } from './edition.js';
 import { routeExternalLinks, openExternal, saveDownload } from './components/external.js';
 import { PROJECT } from './components/help-rail.js';
 import { esc } from './components/escape.js';
 import { Wizard } from './components/wizard.js';
 import { ClientWizard } from './components/client-wizard.js';
-import { CrawlConsole } from './components/crawl-console.js';
+import { CrawlConsole, formatCrawlProgress, isPartialCrawl } from './components/crawl-console.js';
 import { ConfigPanel } from './components/config-panel.js';
 import { Explorer } from './components/explorer.js';
 import { SiteGraph } from './components/site-graph.js';
@@ -314,11 +314,15 @@ const explorer = new Explorer({
 
 // Persistent global crawl console — survives navigation, streams live discovery.
 const crawlConsole = new CrawlConsole(API_BASE, {
-  onView: (crawlId) => {
+  onView: (crawlId, partial) => {
     if (crawlId == null) return;
     loadCrawlData(crawlId);
-    switchProjectView('view-dashboard');
-    loadHome();
+    switchProjectView(partial ? 'view-explorer' : 'view-dashboard');
+  },
+  onResume: resumeCrawl,
+  onStopped: (crawlId) => {
+    if (currentCrawlId === crawlId) loadCrawlData(crawlId);
+    refreshCrawlLists();
   },
 });
 
@@ -347,7 +351,7 @@ const integrationsPanel = new IntegrationsPanel(
 // the results into the same dashboard/explorer/graph the connected app uses.
 // Open a public/anonymous crawl in the same dashboard the connected app uses.
 // Shared by a just-completed audit and by re-opening the persisted latest one.
-function openPublicCrawl(crawlId, targetUrl) {
+function openPublicCrawl(crawlId, targetUrl, partial = false) {
   let host = targetUrl;
   try { host = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch { /* keep raw */ }
   // Keep what we already know (e.g. started_at) instead of replacing the entry.
@@ -355,7 +359,7 @@ function openPublicCrawl(crawlId, targetUrl) {
     ...(crawlsById[crawlId] || {}), id: crawlId, client_name: host, base_url: targetUrl, public: true,
   };
   loadCrawlData(crawlId);
-  switchProjectView('view-dashboard');
+  switchProjectView(partial ? 'view-explorer' : 'view-dashboard');
   document.querySelectorAll('.global-nav .nav-icon, .global-nav .nav-brand')
     .forEach(n => n.classList.remove('active'));
   document.getElementById('nav-btn-projects')?.classList.add('active');
@@ -381,16 +385,60 @@ const publicAudit = new PublicAudit(
       });
     },
     // Re-open the persisted latest audit from the card in the public window.
-    onOpenLatest: (crawlId, targetUrl) => openPublicCrawl(crawlId, targetUrl),
+    onOpenLatest: openPublicCrawl,
+    onResume: (crawlId, targetUrl, button) => {
+      crawlsById[crawlId] = { id: crawlId, base_url: targetUrl, public: true };
+      resumeCrawl(crawlId, button);
+    },
   }
 );
 window.publicAudit = publicAudit; // reachable for verification
 
 function onCrawlStarted(crawlId) {
-  crawlConsole.start(crawlId, () => onCrawlFinished());
+  crawlConsole.start(crawlId, (id) => {
+    onCrawlFinished();
+    if (currentCrawlId === id) loadCrawlData(id);
+    refreshCrawlLists();
+  });
   toast.show('Crawl started. Follow it in the live panel.', 'info');
   switchProjectView('view-home');
   loadClients();
+  loadHome();
+}
+
+function refreshCrawlLists() {
+  loadHome();
+  publicAudit.refresh();
+}
+
+const resumingCrawls = new Set();
+async function resumeCrawl(crawlId, button) {
+  if (resumingCrawls.has(crawlId)) return;
+  resumingCrawls.add(crawlId);
+  button.disabled = true;
+  try {
+    const authz = await authorizeCrawl();
+    if (authz.allowed === false) throw new Error(authz.message || 'This audit cannot resume right now.');
+    const headers = authz.token ? { 'X-Scrawly-Authz': authz.token } : {};
+    const response = await fetch(`${API_BASE}/audit/resume/${crawlId}`, { method: 'POST', headers });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.crawl_id !== crawlId) {
+      throw new Error((typeof data.detail === 'string' ? data.detail : data.detail?.message)
+        || 'Could not resume the audit.');
+    }
+    crawlConsole.start(crawlId, (id) => {
+      onCrawlFinished();
+      if (currentCrawlId === id) loadCrawlData(id);
+      refreshCrawlLists();
+    });
+    if (currentCrawlId === crawlId) loadCrawlData(crawlId);
+    refreshCrawlLists();
+  } catch (error) {
+    toast.show(error.message, 'error');
+  } finally {
+    resumingCrawls.delete(crawlId);
+    button.disabled = false;
+  }
 }
 
 const wizard = new Wizard(
@@ -505,21 +553,25 @@ async function loadHome() {
       card.style.alignItems = 'center';
 
       const date = _fmtDate(c.started_at);
+      const partial = isPartialCrawl(c);
       card.innerHTML = `
         <div>
           <h3>${esc(c.client_name || 'Unknown')} <span style="color: var(--text-secondary); font-weight: 400;">· Audit #${c.id}</span></h3>
-          <p style="margin: 0; color: var(--text-secondary);">${esc(c.base_url || '')} • ${esc(date)} • ${esc(c.url_count)} pages</p>
+          <p style="margin: 0; color: var(--text-secondary);">${esc(c.base_url || '')} • ${esc(date)} • ${esc(formatCrawlProgress(c))}${c.resumable ? ' • Interrupted' : ''}</p>
         </div>
         <div class="flex gap-1" style="align-items:center;">
-          <button class="btn btn-secondary js-open">Open Project</button>
+          <button class="btn btn-secondary js-open">${partial ? 'View saved pages' : 'Open Project'}</button>
+          ${c.resumable ? '<button class="btn btn-primary js-resume" type="button">Resume audit</button>' : ''}
           <button class="btn btn-ghost js-delete" title="Delete this audit and all its data"
                   aria-label="Delete audit ${c.id}">Delete</button>
         </div>
       `;
       card.querySelector('.js-open').addEventListener('click', () => {
         loadCrawlData(c.id);
-        switchProjectView('view-dashboard');
+        switchProjectView(partial ? 'view-explorer' : 'view-dashboard');
       });
+      card.querySelector('.js-resume')?.addEventListener('click', (event) =>
+        resumeCrawl(c.id, event.currentTarget));
       card.querySelector('.js-delete').addEventListener('click', () =>
         deleteAudit(c, card));
       list.appendChild(card);
@@ -583,6 +635,9 @@ async function loadCrawlData(crawlId) {
   const stale = () => seq !== _loadSeq;
   currentCrawlId = crawlId;
   currentCrawlData = { issues: [], urls: [] };
+  explorer.setRows([]);
+  document.getElementById('explorer-crawl-status').hidden = true;
+  refreshSavedPageStatus(crawlId, seq);
   const known = crawlsById[crawlId];
   document.getElementById('active-project-name').textContent =
     `Loading ${(known && known.client_name) || 'audit'}...`;
@@ -622,6 +677,21 @@ async function loadCrawlData(crawlId) {
   } catch(e) {
     console.error("Error loading crawl data", e);
   }
+}
+
+async function refreshSavedPageStatus(crawlId, seq) {
+  const status = await fetchJson(`/audit/status/${crawlId}`);
+  if (seq !== _loadSeq) return;
+  const notice = document.getElementById('explorer-crawl-status');
+  const partial = isPartialCrawl(status);
+  notice.hidden = !partial;
+  if (!partial) return;
+  const stopped = ['failed', 'interrupted'].includes(status.phase);
+  notice.querySelector('span').textContent =
+    `${stopped || status.resumable ? 'Audit interrupted' : 'Audit in progress'} · ${formatCrawlProgress(status)}`;
+  const button = notice.querySelector('button');
+  button.hidden = !status.resumable;
+  button.onclick = () => resumeCrawl(crawlId, button);
 }
 
 async function fetchUrls(crawlId, seq = _loadSeq) {

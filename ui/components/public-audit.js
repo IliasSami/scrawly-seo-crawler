@@ -5,6 +5,7 @@
 // zero install and zero config.
 
 import { authorizeCrawl, isFree } from '../edition.js';
+import { formatCrawlProgress, isPartialCrawl } from './crawl-console.js';
 
 const STACK_META = {
   wordpress: { icon: '🅆', color: '#21759b', label: 'WordPress' },
@@ -47,12 +48,13 @@ const gradeInfo = (score) => {
 };
 
 export class PublicAudit {
-  constructor(container, apiBase, { onAuditStarted, onOpenLatest } = {}) {
+  constructor(container, apiBase, { onAuditStarted, onOpenLatest, onResume } = {}) {
     this.el = container;
     this.api = apiBase;
     this.onAuditStarted = onAuditStarted || (() => {});
     // Re-open the persisted latest audit (survives navigating away / restart).
     this.onOpenLatest = onOpenLatest || (() => {});
+    this.onResume = onResume || (() => {});
     this.detection = null;
     this.preset = null;
     this._shell();
@@ -126,10 +128,10 @@ export class PublicAudit {
     if (!latest || latest.crawl_id == null) { this.latestEl.hidden = true; return; }
     this._latest = latest;
     const host = esc(latest.host || latest.url || 'your last audit');
-    const pages = latest.url_count
-      ? `${latest.url_count} page${latest.url_count === 1 ? '' : 's'}` : '';
+    const partial = isPartialCrawl(latest) || latest.running;
+    const pages = formatCrawlProgress(latest);
     const when = latest.started_at ? this._ago(latest.started_at) : '';
-    const g = gradeInfo(latest.health_score);
+    const g = partial ? null : gradeInfo(latest.health_score);
     // Grade leads the meta line ("Good · 3 pages · 2 min ago") — the headline
     // result at a glance, before you even open the report.
     const meta = [g && g.label, pages, when].filter(Boolean).join(' · ');
@@ -141,29 +143,30 @@ export class PublicAudit {
       ? `<div class="pa-latest-card pa-latest-live">
            <span class="pa-spin"></span>
            <div class="pa-latest-body"><b>Auditing ${host}…</b>
-             <span class="pa-latest-meta">Running now - it'll open when ready.</span></div>
+             <span class="pa-latest-meta">${esc(pages)}</span></div>
+           ${latest.url_count ? '<button class="pa-latest-open" type="button">View saved pages</button>' : ''}
          </div>`
-      : `<div class="pa-latest-card pa-latest-clickable" role="button" tabindex="0"
-              title="Open this audit's report">
+      : `<div class="pa-latest-card pa-latest-clickable"
+              title="${partial ? 'Open saved pages' : 'Open this audit’s report'}">
            ${badge}
            <div class="pa-latest-body">
-             <b>Your latest audit - ${host}</b>
+             <b>${partial ? 'Interrupted audit' : 'Your latest audit'} · ${host}</b>
              <span class="pa-latest-meta">${esc(meta) || 'Read-only report'}</span>
            </div>
-           <button class="pa-latest-open" type="button">View report →</button>
+           <button class="pa-latest-open" type="button">${partial ? 'View saved pages' : 'View report →'}</button>
+           ${latest.resumable ? '<button class="btn btn-primary pa-latest-resume" type="button">Resume audit</button>' : ''}
            <button class="pa-latest-del" type="button" title="Delete this audit" aria-label="Delete this audit">✕</button>
          </div>`;
-    const openReport = () => this.onOpenLatest(latest.crawl_id, latest.url);
+    const openResult = () => this.onOpenLatest(latest.crawl_id, latest.url, partial);
     // The whole card is a big click target; the buttons inside still work.
     const card = this.latestEl.querySelector('.pa-latest-clickable');
-    if (card) {
-      card.addEventListener('click', (e) => { if (!e.target.closest('button')) openReport(); });
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openReport(); }
-      });
-    }
+    card?.addEventListener('click', (event) => {
+      if (!event.target.closest('button')) openResult();
+    });
     const open = this.latestEl.querySelector('.pa-latest-open');
-    if (open) open.addEventListener('click', openReport);
+    if (open) open.addEventListener('click', openResult);
+    this.latestEl.querySelector('.pa-latest-resume')?.addEventListener('click', (event) =>
+      this.onResume(latest.crawl_id, latest.url, event.currentTarget));
     const del = this.latestEl.querySelector('.pa-latest-del');
     if (del) del.addEventListener('click', (e) => { e.stopPropagation(); this._deleteLatest(latest.crawl_id); });
   }

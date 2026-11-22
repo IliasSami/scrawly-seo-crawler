@@ -16,10 +16,22 @@ const STATUS_CLASS = (code) => {
 const hostOf = (u) => { try { return new URL(u).host; } catch { return u; } };
 const pathOf = (u) => { try { const x = new URL(u); return (x.pathname + x.search) || '/'; } catch { return u; } };
 
+export function formatCrawlProgress(status) {
+  if (status.discovered == null) return `${status.url_count ?? 0} pages`;
+  return `${status.processed ?? status.crawled ?? status.url_count ?? 0} processed · ${status.discovered} discovered`;
+}
+
+export function isPartialCrawl(status) {
+  return Boolean(status?.resumable || (status?.phase
+    && !['legacy', 'complete'].includes(status.phase)));
+}
+
 export class CrawlConsole {
-  constructor(apiBase, { onView } = {}) {
+  constructor(apiBase, { onView, onResume, onStopped } = {}) {
     this.apiBase = apiBase;
     this.onView = onView || (() => {});
+    this.onResume = onResume || (() => {});
+    this.onStopped = onStopped || (() => {});
     this.crawlId = null;
     this.timer = null;
     this.done = false;
@@ -52,7 +64,7 @@ export class CrawlConsole {
         <div class="cc-bar"><div class="cc-bar-fill" style="width:0%"></div></div>
 
         <div class="cc-metrics">
-          <div class="cc-metric"><div class="cc-metric-val" data-k="crawled">0</div><div class="cc-metric-label">Crawled</div></div>
+          <div class="cc-metric"><div class="cc-metric-val" data-k="processed">0</div><div class="cc-metric-label">Processed</div></div>
           <div class="cc-metric"><div class="cc-metric-val" data-k="discovered">0</div><div class="cc-metric-label">Discovered</div></div>
           <div class="cc-metric"><div class="cc-metric-val" data-k="queue">0</div><div class="cc-metric-label">Queued</div></div>
           <div class="cc-metric"><div class="cc-metric-val" data-k="pps">0</div><div class="cc-metric-label">Pages/s</div></div>
@@ -69,7 +81,10 @@ export class CrawlConsole {
         <div class="cc-done hidden">
           <div class="cc-done-check">✓</div>
           <div class="cc-done-text">Crawl complete</div>
-          <button class="cc-view btn btn-primary" type="button">View results →</button>
+        </div>
+        <div class="cc-actions" hidden>
+          <button class="cc-view btn btn-secondary" type="button">View saved pages</button>
+          <button class="cc-resume btn btn-primary" type="button">Resume audit</button>
         </div>
       </div>`;
     document.body.appendChild(el);
@@ -78,7 +93,8 @@ export class CrawlConsole {
     $('.cc-min').addEventListener('click', () => this._setMin(true));
     $('.cc-close').addEventListener('click', () => this.hide());
     $('.cc-pill').addEventListener('click', () => this._setMin(false));
-    $('.cc-view').addEventListener('click', () => { this.onView(this.crawlId); this.hide(); });
+    $('.cc-view').addEventListener('click', () => { this.onView(this.crawlId, this.partial); this.hide(); });
+    $('.cc-resume').addEventListener('click', (e) => this.onResume(this.crawlId, e.currentTarget));
   }
 
   start(crawlId, onComplete) {
@@ -88,10 +104,16 @@ export class CrawlConsole {
     // results). Cleared each start so a normal crawl doesn't inherit it.
     this._onComplete = onComplete || null;
     this._unknown = 0;
+    this._pollToken = (this._pollToken ?? 0) + 1;
+    this.partial = true;
     this.el.classList.remove('hidden');
     this._setMin(false);
     this.el.querySelector('.cc-done').classList.add('hidden');
     this.el.querySelector('.cc-panel').classList.remove('cc-complete');
+    this.el.querySelector('.cc-actions').hidden = true;
+    this.el.querySelector('.cc-pill-label').textContent = 'Crawling';
+    this.el.querySelector('.cc-target').textContent = 'Crawl';
+    this._render({ status: 'Starting…' });
     if (this.timer) clearTimeout(this.timer);
     this._poll();
   }
@@ -107,21 +129,25 @@ export class CrawlConsole {
 
   async _poll() {
     if (this.crawlId == null) return;
+    const token = this._pollToken;
     try {
-      const s = await (await fetch(`${this.apiBase}/audit/status/${this.crawlId}`)).json();
+      const response = await fetch(`${this.apiBase}/audit/status/${this.crawlId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const s = await response.json();
+      if (token !== this._pollToken) return;
       this._render(s);
-      const done = s.status === 'Complete' || s.progress >= 100;
-      const failed = (s.status || '').startsWith('Failed');
+      const done = s.phase === 'complete' || s.status === 'Complete' || s.progress >= 100;
+      const failed = s.phase === 'failed' || (s.status || '').startsWith('Failed');
       if (done && !this.done) { this.done = true; this._renderDone(); return; }
-      if (failed) { this.done = true; this._renderFailed(s); return; }
+      if (failed || s.phase === 'interrupted') { this.done = true; this._renderStopped(s); return; }
       // "Unknown" means the engine isn't tracking this crawl (e.g. the app was
       // restarted mid-crawl). Give it a few seconds, then say so instead of
       // spinning forever.
       this._unknown = s.status === 'Unknown' ? (this._unknown || 0) + 1 : 0;
-      if (this._unknown >= 12) { this.done = true; this._renderStopped(); return; }
+      if (this._unknown >= 12) { this.done = true; this._renderStopped(s); return; }
       if (!done) this.timer = setTimeout(() => this._poll(), 700);
     } catch (e) {
-      this.timer = setTimeout(() => this._poll(), 1500);
+      if (token === this._pollToken) this.timer = setTimeout(() => this._poll(), 1500);
     }
   }
 
@@ -135,16 +161,17 @@ export class CrawlConsole {
     const phaseLabel = {
       crawl: 'Finding and crawling pages', enrich: 'Adding Google data',
       store: 'Saving results', audit: 'Checking your pages',
-      complete: 'Complete', failed: 'Crawl stopped',
+      complete: 'Complete', failed: 'Crawl stopped', interrupted: 'Crawl interrupted',
     }[s.phase] || (s.status === 'Unknown' ? 'Waiting…' : (s.status || ''));
     $('.cc-phase-label').textContent = phaseLabel;
-    if (s.elapsed_s != null) $('.cc-elapsed').textContent = `${s.elapsed_s}s`;
+    $('.cc-elapsed').textContent = s.elapsed_s != null ? `${s.elapsed_s}s` : '';
 
     const set = (k, v) => { const n = el.querySelector(`[data-k="${k}"]`); if (n) n.textContent = v; };
-    set('crawled', s.crawled ?? 0);
+    set('processed', s.processed ?? s.crawled ?? 0);
     set('discovered', s.discovered ?? 0);
     set('queue', s.queue ?? 0);
     set('pps', s.pages_per_sec ?? 0);
+    this._setActions((s.url_count ?? s.crawled ?? 0) > 0, s.resumable === true);
 
     // Status tally chips
     const tally = s.status_tally || {};
@@ -177,25 +204,29 @@ export class CrawlConsole {
     el.querySelector('.cc-panel').classList.add('cc-complete');
     el.querySelector('.cc-done').classList.remove('hidden');
     el.querySelector('.cc-phase-label').textContent = 'Complete';
+    el.querySelector('.cc-pill-label').textContent = 'Complete';
+    this.partial = false;
+    this._setActions(true, false);
     this._setMin(false);
     toast.show('Crawl complete. Your results are ready.', 'success');
     if (this._onComplete) { const cb = this._onComplete; this._onComplete = null; cb(this.crawlId); }
   }
 
-  _renderStopped() {
-    const el = this.el;
-    el.querySelector('.cc-phase-label').textContent = 'Crawl stopped';
-    el.querySelector('.cc-panel').classList.add('cc-complete');
-    toast.show('This crawl stopped, probably because the app was restarted. Please start it again.', 'warning');
+  _setActions(view, resume) {
+    const actions = this.el.querySelector('.cc-actions');
+    const viewButton = actions.querySelector('.cc-view');
+    viewButton.textContent = this.partial ? 'View saved pages' : 'View results →';
+    viewButton.hidden = !view;
+    actions.querySelector('.cc-resume').hidden = !resume;
+    actions.hidden = !view && !resume;
   }
 
-  _renderFailed(s) {
+  _renderStopped(s) {
     const el = this.el;
-    // The raw status can carry an internal error; keep it in the console for
-    // diagnosis and show people a plain message.
-    if (s.status) console.warn('[scrawly] crawl stopped:', s.status);
-    el.querySelector('.cc-phase-label').textContent = 'Crawl stopped';
-    el.querySelector('.cc-panel').classList.add('cc-complete');
-    toast.show('The crawl could not finish. Check the address and your connection, then try again.', 'error');
+    el.querySelector('.cc-phase-label').textContent = 'Crawl interrupted';
+    el.querySelector('.cc-pill-label').textContent = 'Interrupted';
+    this.onStopped(this.crawlId);
+    toast.show(s.resumable ? 'The crawl stopped. You can resume this audit.'
+      : 'The crawl stopped before the audit completed.', 'warning');
   }
 }
